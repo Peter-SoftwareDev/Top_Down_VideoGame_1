@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bvd3g11ri2j2n"]
 
-[ext_resource type="res://scripts/Enemy.gd" type="Script" id="1_2m9v8"]
+[ext_resource type="res://scripts/Enemy.gd" path="res://scripts/Enemy.gd" id="1_2m9v8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1v7jo"]
 size = Vector2(20, 20)
@@ -8,11 +8,9 @@ size = Vector2(20, 20)
 [node name="Enemy" type="CharacterBody2D"]
 script = ExtResource("1_2m9v8")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(1, 0.4, 0.4, 1)
-scale = Vector2(1.25, 1.25)
-region_enabled = true
-region_rect = Rect2(0, 0, 20, 20)
-
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_1v7jo")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+color = Color(1, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)

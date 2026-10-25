@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://c6y5v7rds22j8"]
 
-[ext_resource type="res://scripts/Player.gd" type="Script" id="1_1soq8"]
+[ext_resource type="res://scripts/Player.gd" path="res://scripts/Player.gd" id="1_1soq8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3n7a0"]
 size = Vector2(24, 24)
@@ -8,11 +8,9 @@ size = Vector2(24, 24)
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_1soq8")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(0.2, 0.8, 1, 1)
-scale = Vector2(1.5, 1.5)
-region_enabled = true
-region_rect = Rect2(0, 0, 24, 24)
-
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_3n7a0")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+color = Color(0.2, 0.8, 1, 1)
+polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://d1m08r7o8p2op"]
 
-[ext_resource type="res://scripts/Bullet.gd" type="Script" id="1_wf2l5"]
+[ext_resource type="res://scripts/Bullet.gd" path="res://scripts/Bullet.gd" id="1_wf2l5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7v1o3"]
 size = Vector2(8, 8)
@@ -11,8 +11,6 @@ script = ExtResource("1_wf2l5")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_7v1o3")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(1, 1, 0.4, 1)
-scale = Vector2(0.5, 0.5)
-region_enabled = true
-region_rect = Rect2(0, 0, 8, 8)
+[node name="Polygon2D" type="Polygon2D" parent="."]
+color = Color(1, 1, 0.4, 1)
+polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)

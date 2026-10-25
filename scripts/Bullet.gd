@@ -1,6 +1,7 @@
 extends Area2D
 
 @export var speed: float = 500.0
+@export var damage: int = 1
 var direction: Vector2 = Vector2.RIGHT
 
 func _ready() -> void:
@@ -8,14 +9,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	position += direction * speed * delta
-
-	if position.length() > 4000:
+	rotation = direction.angle()
+	if global_position.length() > 5000:
 		queue_free()
 
 func _on_body_entered(body: Node) -> void:
-	if body.is_in_group("enemy"):
-		body.take_damage(1)
-		queue_free()
-	elif body.has_method("take_damage"):
-		body.take_damage(1)
+	if body.is_in_group("enemy") and body.has_method("take_damage"):
+		body.take_damage(damage)
 		queue_free()
