@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://d2c5j7sa4yb7v"]
+
+[ext_resource type="res://scripts/Main.gd" type="Script" id="1_m5w4a"]
+[ext_resource type="res://scripts/Player.gd" type="Script" id="2_6p0u8"]
+[ext_resource type="res://scripts/HUD.gd" type="Script" id="3_j4h6m"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5n1j0"]
+size = Vector2(24, 24)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_m5w4a")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(640, 360)
+script = ExtResource("2_6p0u8")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+modulate = Color(0.2, 0.8, 1, 1)
+scale = Vector2(1.5, 1.5)
+region_enabled = true
+region_rect = Rect2(0, 0, 24, 24)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_5n1j0")
+
+auto
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3_j4h6m")
+
+[node name="HealthLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 160.0
+offset_bottom = 56.0
+text = "Health: 5"
+
+[node name="ScoreLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 48.0
+offset_right = 160.0
+offset_bottom = 88.0
+text = "Score: 0"
