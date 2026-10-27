@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://c6y5v7rds22j8"]
 
-[ext_resource type="res://scripts/Player.gd" path="res://scripts/Player.gd" id="1_1soq8"]
+[ext_resource type="Script" path="res://scripts/Player.gd" id="1_1soq8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3n7a0"]
 size = Vector2(24, 24)

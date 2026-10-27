@@ -9,20 +9,10 @@ var score: int = 0
 var spawn_timer: float = 0.0
 
 func _ready() -> void:
-	create_background()
 	if is_instance_valid(player):
 		player.player_damaged.connect(_on_player_damaged)
 	update_hud()
 	spawn_timer = 1.0
-
-func create_background() -> void:
-	var bg = ColorRect.new()
-	bg.name = "Background"
-	bg.color = Color(0.08, 0.11, 0.18, 1.0)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-	move_child(bg, 0)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(player):
