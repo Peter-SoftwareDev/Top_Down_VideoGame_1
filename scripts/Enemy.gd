@@ -19,7 +19,7 @@ enum State { PATROL, INVESTIGATE, ALERT, WINDUP, LUNGE, RECOVER, KNOCKED, STUNNE
 @export var patrol_points: PackedVector2Array = PackedVector2Array()
 ## Direction a standing guard faces, in degrees. 0 = right, 90 = down, 180 = left.
 @export var facing_degrees: float = 0.0
-@export var vision_range: float = 250.0
+@export var vision_range: float = 380.0
 @export var vision_angle_degrees: float = 100.0
 
 const RADIUS := 14.0

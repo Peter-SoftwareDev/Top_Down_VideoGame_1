@@ -32,9 +32,9 @@ const BOLT_DAMAGE := 2
 # Shove
 const SHOVE_RANGE := 70.0
 const SHOVE_ARC := 100.0
-const SHOVE_FORCE := 780.0
+const SHOVE_FORCE := 560.0          # About 105px of slide (was 780, about 200px).
 const SHOVE_STUN := 0.35
-const SHOVE_COOLDOWN := 0.65
+const SHOVE_COOLDOWN := 1.4
 # Blade
 const SLASH_RANGE := 58.0
 const SLASH_ARC := 120.0
@@ -43,7 +43,7 @@ const SLASH_KNOCK := 140.0
 const SLASH_COOLDOWN := 0.3
 # Stun rock
 const ROCK_RANGE := 420.0
-const ROCK_COOLDOWN := 1.0
+const ROCK_COOLDOWN := 2.5
 
 var health := 5
 var is_dead := false
