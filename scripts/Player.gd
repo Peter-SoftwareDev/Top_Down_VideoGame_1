@@ -112,6 +112,10 @@ const STEP_NOISE := {"straw": 0.0, "stone": 40.0, "brick": 50.0, "water": 120.0,
 const STEP_RING_MIN := 100.0   # Only loud steps show a noise ring.
 var floor_material := "stone"
 var _step_timer := 0.0
+var _step_player: AudioStreamPlayer2D
+var _step_sounds := {}
+## Footstep loudness in dB per material (crouching is much quieter).
+const STEP_VOLUME := {"straw": -14.0, "stone": -10.0, "brick": -11.0, "water": -6.0, "iron": -3.0}
 const SCENT_LIFETIME := 9.0
 
 @onready var camera: Camera2D = $Camera2D
@@ -124,6 +128,7 @@ func _ready() -> void:
 	health = max_health
 	charges = secondary_max_charges
 	last_safe = global_position
+	_setup_step_sounds()
 	sprite = CharacterSprite.new()
 	sprite.gear = GEAR_PRESETS[0].gear.duplicate()
 	add_child(sprite)
@@ -245,13 +250,16 @@ func _footsteps(delta: float) -> void:
 	var floor_node := get_tree().get_first_node_in_group("floor")
 	floor_material = floor_node.material_at(global_position) if floor_node != null else "stone"
 	var moving := velocity.length() > 40.0 and not knocked
-	if not moving or crouching:
+	if not moving:
 		_step_timer = minf(_step_timer, STEP_INTERVAL * 0.5)
 		return
 	_step_timer -= delta
 	if _step_timer > 0.0:
 		return
-	_step_timer = STEP_INTERVAL
+	_step_timer = STEP_INTERVAL * (1.5 if crouching else 1.0)
+	_play_step(floor_material)
+	if crouching:
+		return   # Crouched steps are heard by you, not by guards.
 	var radius: float = STEP_NOISE.get(floor_material, 40.0) * (1.5 if dodge_time > 0.0 else 1.0)
 	if radius <= 0.0:
 		return
@@ -259,6 +267,30 @@ func _footsteps(delta: float) -> void:
 		Fx.noise(self, global_position, radius)
 	else:
 		get_tree().call_group("enemy", "hear_noise", global_position, radius)
+
+## Footstep sounds: every WAV named <material>_<n>.wav in assets/audio/steps, played with a
+## little random pitch and volume so repeats don't sound mechanical.
+func _setup_step_sounds() -> void:
+	_step_player = AudioStreamPlayer2D.new()
+	_step_player.max_distance = 900.0
+	add_child(_step_player)
+	for mat in STEP_NOISE.keys():
+		var rnd := AudioStreamRandomizer.new()
+		rnd.random_pitch = 1.12
+		rnd.random_volume_offset_db = 2.0
+		for i in 8:
+			var path := "res://assets/audio/steps/%s_%d.wav" % [mat, i]
+			if ResourceLoader.exists(path):
+				rnd.add_stream(-1, load(path))
+		if rnd.streams_count > 0:
+			_step_sounds[mat] = rnd
+
+func _play_step(mat: String) -> void:
+	if not _step_sounds.has(mat):
+		return
+	_step_player.stream = _step_sounds[mat]
+	_step_player.volume_db = STEP_VOLUME.get(mat, -10.0) - (12.0 if crouching else 0.0)
+	_step_player.play()
 
 func footstep_noise() -> float:
 	return 0.0 if crouching else STEP_NOISE.get(floor_material, 40.0)
