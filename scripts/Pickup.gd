@@ -2,6 +2,7 @@ extends Area2D
 ## Ammo on the floor: bolts or rocks. Walk over it to pick it up.
 
 const L = preload("res://scripts/Layers.gd")
+const PickupMarker = preload("res://scripts/fx/PickupMarker.gd")
 
 @export_enum("bolt", "rock") var kind: String = "bolt"
 @export var amount: int = 1
@@ -18,6 +19,16 @@ func _ready() -> void:
 	cs.shape = c
 	add_child(cs)
 	z_index = -1
+	add_to_group("pickup")
+	_add_marker.call_deferred()
+
+func _add_marker() -> void:
+	var m := PickupMarker.new()
+	m.target = self
+	m.kind = kind
+	var layer := get_tree().get_first_node_in_group("fx_layer")
+	(layer if layer != null else get_parent()).add_child(m)
+	m.global_position = global_position
 
 func _physics_process(delta: float) -> void:
 	_t += delta

@@ -259,6 +259,19 @@ Each idea has a different relationship with the physics, so each one tests somet
 
 Originally suggested as the first pair: They sit at opposite ends of the physics (too heavy to kick vs. flies across the room), so together they show whether kicking has depth.
 
+## Setting (v0.2, from the latest discussion)
+
+- **The Sunken Lands** are sealed dead lands. The fortress stands on the edge of **the Rift**, a vast chasm leading down into the earth.
+- **Going up is worse:** the surface beyond the fortress is held by flying beasts and orc warbands. No one escapes that way.
+- **So the prisoner goes down.** The fortress descends into the Rift, and below it lies a complete underground world. That world is said to connect to the **ancient mines of an old king**, and through them back to friendly territory. Every floor down is both more dangerous and closer to freedom.
+- **The chasms** (Option A, "The Drop", adapted): the fortress is built down the wall of the Rift. Its chasms are places where floors have collapsed towards the depths. Things that fall are gone, or land somewhere far below.
+- **The floors as a journey:** Prison (the fortress's upper levels) → Cistern (the waterworks cut into the Rift wall) → Foundry (the forges at the bottom of the fortress) → the gates of the underground world.
+
+**Naming note (keeping it original):** "Deeping", an underground king's mines, orcs and flying beasts together echo a very famous fantasy series closely. The design brief asks for a distinct identity, so I'd suggest original names. A few starting points:
+- **The underground world:** *the Hollowreach*, *the Undervault*, *the Lowmarch*, *Gloamhold*
+- **The old king and his mines:** *the Mine-Kings of Varrow*, *the Hearthless King*, *the Ashen Delvings*
+- **The surface threats:** keep "orcs" (a generic fantasy term) or give them a culture of their own. The flying beasts could become something specific, e.g. *wyrmkites* or *carrion drakes*.
+
 ## The Chasms: What Are They? (options to choose from)
 
 Pits are the game's signature hazard, so they should mean something in the world. Here are three framings that can be combined.

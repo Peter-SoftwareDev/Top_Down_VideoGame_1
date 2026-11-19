@@ -5,13 +5,16 @@ See [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) for the full design.
 
 ## Current milestone: M0 combat sandbox
 
-One gray-box room for testing whether physics combat is fun before building floors, keys and progression.
+A gray-box test area for physics combat, before building real floors, keys and progression. The original room is surrounded by three test zones connected by doorways:
+- **The Bridge** (east): a narrow walkway between two pits, one with a crumbling rim, and a guard patrolling it.
+- **The Dark Hall** (south-east): unlit, with barricades and crates for stealth, an unlit brazier, guards and a hound.
+- **The Channel** (south): a long deep-water channel with a second Gaoler and a guard patrolling beside it.
 
 - **Weapon select:** pick a loadout at the start. It's locked in for the run; R resets the room with the same loadout, and Esc goes back to the select screen.
 - **Two loadouts:**
   - **Crossbow + Kick**: a lethal bolt at range, plus a short-range kick that doesn't kill but sends guards (and crates) sliding.
   - **Blade + Stun Rock**: a lethal slash up close, plus a thrown rock that stuns, knocks back and makes noise.
-- **Charges and ammo:** the kick and the rock each have 1 charge that refills on a cooldown. Bolts and rocks are limited, but you can pick them up again where they land (glowing on the floor). Ammo that goes into a pit or water is lost.
+- **Charges and ammo:** the kick and the rock each have 1 charge that refills on a cooldown. Bolts and rocks are limited, but you can pick them up again where they land. Dropped ammo shows a marker that's visible even in the dark, and arrows at the screen edge point to ammo that's off-screen. Ammo that goes into a pit or water is lost.
 - **Hazards:** guards knocked over the rim of a pit fall in, and guards knocked into deep water drown. The chasm's cracked rim crumbles under a guard that skids to a stop on it. A guard's hit can throw *you* in too (pit −2 health, water −1).
 - **Crates:** block sight, slide when kicked, crush guards they hit, and break noisily after two hard impacts, spilling any ammo inside.
 - **Chain reactions:** anything knocked into a guard or crate passes the push along. A guard slammed hard into a wall is stunned, and a stunned guard flies further when kicked.

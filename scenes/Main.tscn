@@ -17,9 +17,9 @@
 script = ExtResource("1_main")
 
 [node name="Floor" type="Node2D" parent="."]
-position = Vector2(700, 450)
+position = Vector2(1100, 700)
 script = ExtResource("2_floor")
-size = Vector2(1400, 900)
+size = Vector2(2200, 1400)
 
 [node name="Hazards" type="Node2D" parent="."]
 
@@ -40,27 +40,102 @@ script = ExtResource("4_hazard")
 kind = 1
 size = Vector2(360, 240)
 
+[node name="BridgePitNorth" type="Node2D" parent="Hazards"]
+position = Vector2(1820, 200)
+script = ExtResource("4_hazard")
+size = Vector2(520, 150)
+
+[node name="BridgePitSouth" type="Node2D" parent="Hazards"]
+position = Vector2(1820, 430)
+script = ExtResource("4_hazard")
+size = Vector2(520, 150)
+crumbles = true
+
+[node name="Channel" type="Node2D" parent="Hazards"]
+position = Vector2(700, 1200)
+script = ExtResource("4_hazard")
+kind = 1
+size = Vector2(1000, 130)
+
 [node name="Walls" type="Node2D" parent="."]
 
 [node name="North" type="StaticBody2D" parent="Walls"]
-position = Vector2(700, -20)
+position = Vector2(1100, -20)
 script = ExtResource("3_wall")
-size = Vector2(1480, 40)
+size = Vector2(2280, 40)
 
 [node name="South" type="StaticBody2D" parent="Walls"]
-position = Vector2(700, 920)
+position = Vector2(1100, 1420)
 script = ExtResource("3_wall")
-size = Vector2(1480, 40)
+size = Vector2(2280, 40)
 
 [node name="West" type="StaticBody2D" parent="Walls"]
-position = Vector2(-20, 450)
+position = Vector2(-20, 700)
 script = ExtResource("3_wall")
-size = Vector2(40, 900)
+size = Vector2(40, 1400)
 
 [node name="East" type="StaticBody2D" parent="Walls"]
-position = Vector2(1420, 450)
+position = Vector2(2220, 700)
 script = ExtResource("3_wall")
-size = Vector2(40, 900)
+size = Vector2(40, 1400)
+
+[node name="DividerEastA" type="StaticBody2D" parent="Walls"]
+position = Vector2(1420, 150)
+script = ExtResource("3_wall")
+size = Vector2(40, 300)
+
+[node name="DividerEastB" type="StaticBody2D" parent="Walls"]
+position = Vector2(1420, 700)
+script = ExtResource("3_wall")
+size = Vector2(40, 560)
+
+[node name="DividerEastC" type="StaticBody2D" parent="Walls"]
+position = Vector2(1420, 1250)
+script = ExtResource("3_wall")
+size = Vector2(40, 300)
+
+[node name="DividerSouthA" type="StaticBody2D" parent="Walls"]
+position = Vector2(150, 920)
+script = ExtResource("3_wall")
+size = Vector2(300, 40)
+
+[node name="DividerSouthB" type="StaticBody2D" parent="Walls"]
+position = Vector2(710, 920)
+script = ExtResource("3_wall")
+size = Vector2(580, 40)
+
+[node name="DividerSouthC" type="StaticBody2D" parent="Walls"]
+position = Vector2(1260, 920)
+script = ExtResource("3_wall")
+size = Vector2(280, 40)
+
+[node name="DividerWingA" type="StaticBody2D" parent="Walls"]
+position = Vector2(1600, 620)
+script = ExtResource("3_wall")
+size = Vector2(320, 40)
+
+[node name="DividerWingB" type="StaticBody2D" parent="Walls"]
+position = Vector2(2040, 620)
+script = ExtResource("3_wall")
+size = Vector2(320, 40)
+
+[node name="DarkBarricadeA" type="StaticBody2D" parent="Walls"]
+position = Vector2(1650, 900)
+script = ExtResource("3_wall")
+size = Vector2(90, 24)
+low = true
+
+[node name="DarkBarricadeB" type="StaticBody2D" parent="Walls"]
+position = Vector2(1950, 1150)
+script = ExtResource("3_wall")
+size = Vector2(24, 90)
+low = true
+
+[node name="DarkBarricadeC" type="StaticBody2D" parent="Walls"]
+position = Vector2(2050, 800)
+script = ExtResource("3_wall")
+size = Vector2(90, 24)
+low = true
 
 [node name="PillarA" type="StaticBody2D" parent="Walls"]
 position = Vector2(430, 420)
@@ -123,6 +198,33 @@ script = ExtResource("5_torch")
 brazier = true
 light_radius = 220.0
 
+[node name="TorchBridgeN" type="Node2D" parent="Torches"]
+position = Vector2(1820, 14)
+script = ExtResource("5_torch")
+
+[node name="TorchBridgeE" type="Node2D" parent="Torches"]
+position = Vector2(2186, 300)
+script = ExtResource("5_torch")
+
+[node name="TorchSouthA" type="Node2D" parent="Torches"]
+position = Vector2(400, 1386)
+script = ExtResource("5_torch")
+
+[node name="TorchSouthB" type="Node2D" parent="Torches"]
+position = Vector2(1000, 1386)
+script = ExtResource("5_torch")
+
+[node name="TorchSouthW" type="Node2D" parent="Torches"]
+position = Vector2(14, 1150)
+script = ExtResource("5_torch")
+
+[node name="BrazierDark" type="Node2D" parent="Torches"]
+position = Vector2(1850, 1250)
+script = ExtResource("5_torch")
+brazier = true
+light_radius = 220.0
+lit = false
+
 [node name="Props" type="Node2D" parent="."]
 
 [node name="CrateChasm" type="CharacterBody2D" parent="Props"]
@@ -169,6 +271,32 @@ script = ExtResource("10_pickup")
 kind = "rock"
 amount = 2
 
+[node name="CrateDarkA" type="CharacterBody2D" parent="Props"]
+position = Vector2(1800, 1000)
+script = ExtResource("9_crate")
+contents = "bolt"
+contents_amount = 2
+
+[node name="CrateDarkB" type="CharacterBody2D" parent="Props"]
+position = Vector2(2100, 1300)
+script = ExtResource("9_crate")
+contents = "rock"
+contents_amount = 2
+
+[node name="CrateChannelW" type="CharacterBody2D" parent="Props"]
+position = Vector2(150, 1060)
+script = ExtResource("9_crate")
+contents = "rock"
+contents_amount = 2
+
+[node name="CrateChannelE" type="CharacterBody2D" parent="Props"]
+position = Vector2(1300, 1200)
+script = ExtResource("9_crate")
+
+[node name="CrateBridge" type="CharacterBody2D" parent="Props"]
+position = Vector2(1500, 360)
+script = ExtResource("9_crate")
+
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="ChasmGuard" parent="Enemies" instance=ExtResource("7_enemy")]
@@ -208,6 +336,38 @@ patrol_points = PackedVector2Array(470, 865, 880, 865)
 position = Vector2(880, 875)
 max_health = 1
 patrol_points = PackedVector2Array(880, 875, 470, 875)
+
+[node name="BridgeGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(1600, 315)
+patrol_points = PackedVector2Array(1600, 315, 2040, 315)
+
+[node name="BridgeSentry" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(2150, 315)
+facing_degrees = 180.0
+
+[node name="DarkGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(1550, 760)
+patrol_points = PackedVector2Array(1550, 760, 2120, 760, 2120, 1330, 1550, 1330)
+
+[node name="DarkSentry" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(1800, 1100)
+facing_degrees = 0.0
+
+[node name="HoundC" parent="Enemies" instance=ExtResource("12_hound")]
+position = Vector2(1600, 1220)
+max_health = 1
+patrol_points = PackedVector2Array(1600, 1220, 2000, 1220)
+
+[node name="ChannelGaoler" parent="Enemies" instance=ExtResource("11_gaoler")]
+position = Vector2(300, 1060)
+max_health = 6
+walk_speed = 55.0
+chase_speed = 95.0
+patrol_points = PackedVector2Array(300, 1060, 1100, 1060)
+
+[node name="ChannelGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(250, 1330)
+patrol_points = PackedVector2Array(250, 1330, 1150, 1330)
 
 [node name="Player" parent="." instance=ExtResource("6_player")]
 position = Vector2(140, 150)

@@ -439,7 +439,9 @@ func _do_investigate(delta: float) -> void:
 		target_point = last_glimpse
 		return
 	# Walk to the spot (give up after a few seconds if blocked), then look around.
-	if global_position.distance_to(target_point) > 12.0 and state_time < 6.0:
+	# Close enough? (Things like braziers are solid, so "right next to it" counts.)
+	var arrive_dist := 40.0 if get_real_velocity().length() < 20.0 and state_time > 0.3 else 12.0
+	if global_position.distance_to(target_point) > arrive_dist and state_time < 6.0:
 		_move_toward(target_point, _investigate_speed(), delta)
 	elif _on_arrived():
 		return

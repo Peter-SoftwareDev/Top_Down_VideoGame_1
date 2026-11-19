@@ -36,6 +36,27 @@ func _bar(pos: Vector2, label: String, ratio: float) -> void:
 	var c := Color(0.9, 0.85, 0.6) if ratio >= 1.0 else Color(0.5, 0.48, 0.4)
 	canvas.draw_rect(Rect2(pos + Vector2(0, 15), Vector2(120 * ratio, 6)), c)
 
+## Arrows at the screen edge pointing to dropped ammo that's out of view.
+func _draw_offscreen_pickups(vp: Vector2) -> void:
+	var xf := canvas.get_viewport().get_canvas_transform()
+	var margin := 26.0
+	var inner := Rect2(Vector2(margin, margin), vp - Vector2(margin, margin) * 2.0)
+	var centre := vp * 0.5
+	for p in get_tree().get_nodes_in_group("pickup"):
+		if player.global_position.distance_to(p.global_position) > 1400.0:
+			continue
+		var sp: Vector2 = xf * p.global_position
+		if inner.has_point(sp):
+			continue
+		var dir := (sp - centre).normalized()
+		# Push from the centre to the edge of the inner rectangle.
+		var tx := (inner.size.x * 0.5) / maxf(absf(dir.x), 0.001)
+		var ty := (inner.size.y * 0.5) / maxf(absf(dir.y), 0.001)
+		var at := centre + dir * minf(tx, ty)
+		var c := Color(1.0, 0.78, 0.4, 0.85) if p.kind == "bolt" else Color(0.75, 0.82, 0.95, 0.85)
+		var side := dir.orthogonal() * 7.0
+		canvas.draw_colored_polygon(PackedVector2Array([at + dir * 10.0, at - dir * 4.0 + side, at - dir * 4.0 - side]), c)
+
 func _draw_hud() -> void:
 	if player == null or main == null:
 		return
@@ -76,6 +97,8 @@ func _draw_hud() -> void:
 	canvas.draw_rect(Rect2(vp.x - box_w - 12, 12, box_w, 74), Color(0, 0, 0, 0.5))
 	for i in lines.size():
 		_text(Vector2(vp.x - box_w, 34 + i * 20), lines[i], 14, light)
+
+	_draw_offscreen_pickups(vp)
 
 	var help := [
 		"WASD move  |  Mouse aim  |  LMB primary  |  RMB secondary",
