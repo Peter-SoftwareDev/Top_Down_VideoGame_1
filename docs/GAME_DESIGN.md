@@ -267,6 +267,8 @@ Originally suggested as the first pair: They sit at opposite ends of the physics
 - **The chasms** (Option A, "The Drop", adapted): the fortress is built down the wall of the Rift. Its chasms are places where floors have collapsed towards the depths. Things that fall are gone, or land somewhere far below.
 - **The floors as a journey:** Prison (the fortress's upper levels) → Cistern (the waterworks cut into the Rift wall) → Foundry (the forges at the bottom of the fortress) → the gates of the underground world.
 
+**Floors by region:** see [`REGION_MATERIALS.md`](REGION_MATERIALS.md). Floors grow less built and more carved with depth, and flagstones return only at Hearthmere.
+
 **Names:** all the original names are now placed in the world. See [`WORLD.md`](WORLD.md).
 
 ## The Chasms: What Are They? (options to choose from)

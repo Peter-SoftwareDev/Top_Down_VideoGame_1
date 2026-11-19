@@ -1,5 +1,7 @@
 # Natural-Looking Dungeons
 
+> **Update:** flagstones turned out to be a *surface* material. Each region now has its own material set; see [`REGION_MATERIALS.md`](REGION_MATERIALS.md). The techniques below (smooth fields, per-stone decisions, reasons for boundaries) apply to all of them.
+
 **Problem:** repeated 32×32 tiles create an obvious grid. Your eye finds the same stone again and again.
 **Goal:** floors and walls that feel built, worn and ruined over centuries, without hand-painting every room.
 
