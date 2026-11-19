@@ -20,6 +20,7 @@ func _ready() -> void:
 	vision_angle_degrees = 140.0
 	close_sense = 80.0
 	close_sense_through_walls = true
+	fooled_by_looks = false
 	attack_range = 38.0
 	windup_time = 0.3
 	feint_chance = 0.1

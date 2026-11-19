@@ -53,7 +53,7 @@ func _draw_offscreen_pickups(vp: Vector2) -> void:
 		var tx := (inner.size.x * 0.5) / maxf(absf(dir.x), 0.001)
 		var ty := (inner.size.y * 0.5) / maxf(absf(dir.y), 0.001)
 		var at := centre + dir * minf(tx, ty)
-		var c := Color(1.0, 0.78, 0.4, 0.85) if p.kind == "bolt" else Color(0.75, 0.82, 0.95, 0.85)
+		var c: Color = {"bolt": Color(1.0, 0.78, 0.4, 0.85), "rock": Color(0.75, 0.82, 0.95, 0.85), "gear": Color(0.6, 1.0, 0.8, 0.85)}.get(p.kind, Color.WHITE)
 		var side := dir.orthogonal() * 7.0
 		canvas.draw_colored_polygon(PackedVector2Array([at + dir * 10.0, at - dir * 4.0 + side, at - dir * 4.0 - side]), c)
 
@@ -67,6 +67,13 @@ func _draw_hud() -> void:
 	for i in player.max_health:
 		var hc := Color(0.85, 0.2, 0.2) if i < player.health else Color(0.25, 0.2, 0.2)
 		canvas.draw_rect(Rect2(24 + i * 22, 24, 18, 18), hc)
+	var ax: int = 24 + player.max_health * 22 + 10
+	for i in player.armor_max:
+		var ac := Color(0.7, 0.75, 0.82) if i < player.armor else Color(0.22, 0.23, 0.26)
+		canvas.draw_rect(Rect2(ax + i * 16, 27, 12, 12), ac)
+	var gs: String = player.gear_summary()
+	if gs != "":
+		_text(Vector2(ax + player.armor_max * 16 + 8, 38), gs, 13, Color(0.78, 0.82, 0.9))
 	_text(Vector2(24, 62), player.loadout_name(), 16, light)
 	_bar(Vector2(24, 72), "LMB  " + player.primary_name(), player.primary_ready())
 	_bar(Vector2(160, 72), "RMB  " + player.secondary_name(), player.secondary_ready())

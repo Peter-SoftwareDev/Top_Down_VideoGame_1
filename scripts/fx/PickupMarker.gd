@@ -19,7 +19,7 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var c := Color(1.0, 0.78, 0.4) if kind == "bolt" else Color(0.75, 0.82, 0.95)
+	var c: Color = {"bolt": Color(1.0, 0.78, 0.4), "rock": Color(0.75, 0.82, 0.95), "gear": Color(0.6, 1.0, 0.8)}.get(kind, Color.WHITE)
 	var bob := sin(_t * 3.0) * 3.0
 	# Ground ring where it actually lies.
 	draw_arc(Vector2.ZERO, 9.0, 0.0, TAU, 20, Color(c.r, c.g, c.b, 0.55), 1.5)
@@ -30,5 +30,7 @@ func _draw() -> void:
 	var icon := tip + Vector2(0, -15)
 	if kind == "bolt":
 		draw_line(icon + Vector2(-5, 2), icon + Vector2(5, -2), c, 2.0)
+	elif kind == "gear":
+		draw_rect(Rect2(icon - Vector2(4, 3), Vector2(8, 6)), c)
 	else:
 		draw_circle(icon, 3.5, c)

@@ -111,6 +111,32 @@ const STEP_INTERVAL := 0.38
 const STEP_NOISE := {"straw": 0.0, "stone": 40.0, "brick": 50.0, "water": 120.0, "iron": 160.0}
 const STEP_RING_MIN := 100.0   # Only loud steps show a noise ring.
 var floor_material := "stone"
+
+# --- Gear effects -------------------------------------------------------------------
+## What each piece does. step_mult scales footstep noise; clank is noise the gear itself makes
+## (heard even on straw, and a little even when crouching); armor absorbs hits before health;
+## notice_mult < 1 makes guards slower to notice you.
+const GEAR_STATS := {
+	"hands": {0: {"clank": 15.0}, 3: {"clank": 5.0}},                   # shackle chains rattle
+	"feet": {1: {"step_mult": 0.7}, 3: {"step_mult": 1.4, "clank": 25.0, "armor": 1}},
+	"torso": {1: {"armor": 1}, 2: {"armor": 2, "clank": 20.0}, 3: {"armor": 3, "clank": 25.0}},
+	"head": {1: {"notice_mult": 0.9}, 2: {"armor": 1, "clank": 5.0}, 3: {"armor": 1, "clank": 5.0}},
+	"back": {1: {"step_mult": 0.85}, 2: {"step_mult": 0.9}, 3: {"step_mult": 0.85, "notice_mult": 0.85}},
+}
+const GEAR_NAMES := {
+	"hands": {0: "broken shackles", 1: "cloth wraps", 2: "leather gloves", 3: "bronze gauntlets"},
+	"feet": {1: "rag foot-wraps", 2: "leather boots", 3: "iron greaves"},
+	"torso": {1: "leather jerkin", 2: "Gaolwarden mail and tabard", 3: "bronze cuirass"},
+	"head": {1: "hood", 2: "Gaolwarden helm", 3: "imperial bronze helm"},
+	"back": {1: "tattered cloak", 2: "Gaolwarden cloak", 3: "Rift-teal mantle"},
+}
+const CROUCH_CLANK := 0.4          # Share of gear clank still heard while crouching.
+const RECOGNIZE_DIST := 90.0       # Closer than this, a disguise doesn't fool anyone.
+var armor := 0
+var armor_max := 0
+var step_mult := 1.0
+var clank := 0.0
+var notice_mult := 1.0
 var _step_timer := 0.0
 var _step_player: AudioStreamPlayer2D
 var _step_sounds := {}
@@ -132,6 +158,8 @@ func _ready() -> void:
 	sprite = CharacterSprite.new()
 	sprite.gear = GEAR_PRESETS[0].gear.duplicate()
 	add_child(sprite)
+	_recalc_gear()
+	armor = armor_max
 	# Weapon, swing arcs and aim guides draw on top of the sprite.
 	overlay = Node2D.new()
 	add_child(overlay)
@@ -258,9 +286,7 @@ func _footsteps(delta: float) -> void:
 		return
 	_step_timer = STEP_INTERVAL * (1.5 if crouching else 1.0)
 	_play_step(floor_material)
-	if crouching:
-		return   # Crouched steps are heard by you, not by guards.
-	var radius: float = STEP_NOISE.get(floor_material, 40.0) * (1.5 if dodge_time > 0.0 else 1.0)
+	var radius: float = footstep_noise() * (1.5 if dodge_time > 0.0 else 1.0)
 	if radius <= 0.0:
 		return
 	if radius >= STEP_RING_MIN:
@@ -292,8 +318,67 @@ func _play_step(mat: String) -> void:
 	_step_player.volume_db = STEP_VOLUME.get(mat, -10.0) - (12.0 if crouching else 0.0)
 	_step_player.play()
 
+## How far your footsteps carry right now: the floor, scaled by your footwear and cloak,
+## plus whatever your gear rattles. Crouching silences your feet but not heavy armour.
 func footstep_noise() -> float:
-	return 0.0 if crouching else STEP_NOISE.get(floor_material, 40.0)
+	if crouching:
+		return clank * CROUCH_CLANK
+	return STEP_NOISE.get(floor_material, 40.0) * step_mult + clank
+
+func gear() -> Dictionary:
+	return sprite.gear if sprite != null else {}
+
+## Put on a piece of gear. Returns the tier it replaced (-1 if the slot was empty).
+func equip(slot: String, tier: int) -> int:
+	var old: int = gear().get(slot, -1)
+	sprite.set_gear(slot, tier)
+	var old_max := armor_max
+	_recalc_gear()
+	armor = clampi(armor + maxi(armor_max - old_max, 0), 0, armor_max)
+	return old
+
+func _recalc_gear() -> void:
+	step_mult = 1.0; clank = 0.0; notice_mult = 1.0; armor_max = 0
+	for slot in gear():
+		var stats: Dictionary = GEAR_STATS.get(slot, {}).get(gear()[slot], {})
+		step_mult *= stats.get("step_mult", 1.0)
+		clank += stats.get("clank", 0.0)
+		notice_mult *= stats.get("notice_mult", 1.0)
+		armor_max += stats.get("armor", 0)
+	armor = mini(armor, armor_max)
+
+## 1.0 = full Gaolwarden disguise (helm and tabard), 0.5 = half of it, 0 = none.
+func disguise_level() -> float:
+	var g := gear()
+	var level := 0.0
+	if g.get("head", -1) == 2:
+		level += 0.5
+	if g.get("torso", -1) == 2:
+		level += 0.5
+	return level
+
+## How much longer than normal a guard takes to notice you (1.0 = normal).
+func notice_multiplier(dist: float, guard_is_wary: bool, fooled_by_looks: bool) -> float:
+	var m := 1.0 / notice_mult
+	var d := disguise_level()
+	if d > 0.0 and fooled_by_looks and not guard_is_wary and not crouching and dist > RECOGNIZE_DIST:
+		# A guard walking openly is just another guard. Sneaking about is not.
+		m *= 1.0 + d * 2.3
+		if gear().get("back", -1) == 2:
+			m *= 1.25
+	return m
+
+func gear_summary() -> String:
+	var parts := []
+	if armor_max > 0:
+		parts.append("armour %d/%d" % [armor, armor_max])
+	if disguise_level() >= 1.0:
+		parts.append("DISGUISED")
+	elif disguise_level() > 0.0:
+		parts.append("half-disguised")
+	if clank > 0.0:
+		parts.append("clank %d" % int(clank))
+	return "  |  ".join(parts)
 
 func _leave_scent(delta: float) -> void:
 	scent_clock += delta
@@ -308,6 +393,8 @@ func _leave_scent(delta: float) -> void:
 func cycle_gear() -> void:
 	gear_preset = (gear_preset + 1) % GEAR_PRESETS.size()
 	sprite.set_all_gear(GEAR_PRESETS[gear_preset].gear)
+	_recalc_gear()
+	armor = armor_max
 	Fx.popup(self, global_position + Vector2(0, -40), GEAR_PRESETS[gear_preset].name, Color(1.0, 0.85, 0.55))
 
 func gear_name() -> String:
@@ -441,6 +528,11 @@ func _throw_rock() -> void:
 func take_damage(amount: int, from_pos: Vector2, knock: float = 320.0) -> void:
 	if is_dead or invuln > 0.0 or dodge_time > 0.0:
 		return
+	if armor > 0:
+		var absorbed := mini(armor, amount)
+		armor -= absorbed
+		amount -= absorbed
+		Fx.popup(self, global_position + Vector2(0, -36), "ARMOUR" if armor > 0 else "ARMOUR BROKEN", Color(0.75, 0.8, 0.9))
 	health = maxi(health - amount, 0)
 	invuln = HIT_INVULN
 	hurt_velocity = (global_position - from_pos).normalized() * knock

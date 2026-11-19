@@ -18,7 +18,23 @@ The four test sets (press **G**): **Prisoner → Scavenger → Turncoat → Reli
 
 Guards are the same rig in Gaolwarden gear, which is why the **Turncoat** set looks like a guard. The Gaoler and the hounds have their own sheets.
 
-## Gear that matters in play (ideas)
+## Gear that matters in play
+**Built:**
+| Piece | Effect |
+|---|---|
+| Broken shackles (start) | Rattle: +15 noise per step, until replaced |
+| Rag foot-wraps | Footsteps ×0.7 |
+| Iron greaves | Footsteps ×1.4, +25 clank, +1 armour |
+| Leather jerkin | +1 armour |
+| Gaolwarden mail and tabard | +2 armour, +20 clank, half the disguise |
+| Bronze cuirass | +3 armour, +25 clank |
+| Hood | Guards notice you 10% slower |
+| Gaolwarden helm / bronze helm | +1 armour, +5 clank (the Gaolwarden helm is the other half of the disguise) |
+| Cloaks | Footsteps ×0.85–0.9; the Gaolwarden cloak strengthens the disguise; the Rift mantle makes guards notice you 15% slower |
+
+Clank is heard even on straw; crouching still lets 40% of it through. The disguise works only beyond about 90px, while walking openly, against unaware guards and never against hounds.
+
+**Still ideas:**
 - **Weight vs. stealth:** iron greaves and a cuirass make footsteps louder; rag wraps and a cloak make them quieter. Armour becomes a trade-off, not a pure upgrade.
 - **The Turncoat disguise:** in full Gaolwarden gear, guards take longer to notice you at a distance, but anyone who sees your face up close knows. It's the only "social stealth" this setting really supports.
 - **Visible wear:** gear dents, tears and darkens as it takes hits (the design's equipment wear, shown on the sprite).

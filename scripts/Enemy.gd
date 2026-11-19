@@ -13,6 +13,7 @@ extends CharacterBody2D
 const L = preload("res://scripts/Layers.gd")
 const Fx = preload("res://scripts/Fx.gd")
 const CharacterSprite = preload("res://scripts/CharacterSprite.gd")
+const Body = preload("res://scripts/Body.gd")
 const GUARD_GEAR := {"back": 2, "head": 2, "torso": 2, "hands": 2, "feet": 3}
 
 signal died(enemy: Node, cause: String)
@@ -41,7 +42,11 @@ const CROUCH_NOTICE_MULT := 1.5
 # Light: in pitch darkness an unaware guard sees only this share of its normal range.
 const DARK_SIGHT_MULT := 0.35
 const DARK_SIGHT_MULT_ALERTED := 0.6
-const RELIGHT_REACH := 70.0   # A crouching player in the open takes longer to notice.
+const RELIGHT_REACH := 70.0
+# Bodies
+const BODY_LOOK_INTERVAL := 0.2
+const BODY_ALARM_RADIUS := 420.0
+const BODY_WEIGHT := 1.0   # A crouching player in the open takes longer to notice.
 # Alarm
 const SHOUT_TIME := 0.5            # Window to silence a guard before the alarm goes off.
 const ALARM_RADIUS := 330.0
@@ -80,6 +85,10 @@ const CONE_RAYS := 14
 var radius := RADIUS
 var close_sense := CLOSE_SENSE
 var close_sense_through_walls := false   # Hounds smell you behind cover.
+## Can a disguise fool this enemy? (Hounds go by smell.)
+var fooled_by_looks := true
+var body_alarm_pending := false
+var _body_look_t := 0.0
 var attack_range := ATTACK_RANGE
 var windup_time := WINDUP_TIME
 var feint_chance := FEINT_CHANCE
@@ -159,6 +168,20 @@ func _ready() -> void:
 	overlay = Node2D.new()
 	add_child(overlay)
 	overlay.draw.connect(_draw_overlay)
+
+## Leave a body behind, with the same look as this guard.
+func _spawn_body() -> void:
+	var b := Body.new()
+	if sprite != null:
+		b.look = {"body": sprite.body, "gear": sprite.gear.duplicate(), "sheet_path": sprite.sheet_path,
+			"frame_size": sprite.frame_size, "lift": sprite.lift}
+	b.weight = _body_weight()
+	b.radius = radius
+	b.position = global_position
+	get_parent().add_child(b)
+
+func _body_weight() -> float:
+	return BODY_WEIGHT
 
 ## The character's look. Enemy types override this.
 func _make_sprite() -> Node2D:
@@ -351,6 +374,41 @@ func _light_factor(alerted: bool) -> float:
 		return 1.0
 	return lerpf(DARK_SIGHT_MULT_ALERTED if alerted else DARK_SIGHT_MULT, 1.0, l)
 
+## Unaware guards notice bodies in their vision cone. Bodies in darkness are only spotted up close.
+func _look_for_bodies(delta: float) -> bool:
+	_body_look_t -= delta
+	if _body_look_t > 0.0:
+		return false
+	_body_look_t = BODY_LOOK_INTERVAL
+	for b in get_tree().get_nodes_in_group("body"):
+		if b.discovered:
+			continue
+		var to: Vector2 = b.global_position - global_position
+		var dist := to.length()
+		var reach := _sight_range(false) * lerpf(DARK_SIGHT_MULT, 1.0, b.light)
+		if dist > reach:
+			continue
+		if dist > close_sense and absf(facing.angle_to(to)) > deg_to_rad(vision_angle_degrees) * 0.5:
+			continue
+		if not _line_clear(b.global_position, L.SIGHT_MASK):
+			continue
+		b.discovered = true
+		body_alarm_pending = true
+		wary = true
+		Fx.popup(self, global_position + Vector2(0, -_sprite_height() - 6), "!?", Color(1.0, 0.6, 0.3))
+		_investigate(b.global_position)
+		return true
+	return false
+
+## At the body: shout, and bring every guard in earshot to search the area.
+func _raise_body_alarm() -> void:
+	body_alarm_pending = false
+	velocity = Vector2.ZERO
+	Fx.popup(self, global_position + Vector2(0, -_sprite_height() - 6), "BODY!", Color(1.0, 0.35, 0.3))
+	Fx.alarm(self, global_position, BODY_ALARM_RADIUS, target_point)
+	look_time = INVESTIGATE_LOOK_TIME * 2.0
+	state_time = 6.0   # Stay here and look around.
+
 ## A guard checking out a noise relights any doused torch it finds there.
 func _try_relight() -> void:
 	for t in get_tree().get_nodes_in_group("torch"):
@@ -381,6 +439,8 @@ func _update_suspicion(delta: float) -> bool:
 				notice_time *= WARY_NOTICE_MULT
 			if player.get("crouching"):
 				notice_time *= CROUCH_NOTICE_MULT
+			if player.has_method("notice_multiplier"):
+				notice_time *= player.notice_multiplier(dist, wary, fooled_by_looks)
 			suspicion += delta / notice_time
 	else:
 		suspicion = maxf(suspicion - SUSPICION_DECAY * delta, 0.0)
@@ -431,6 +491,8 @@ func _patrol_speed() -> float:
 func _do_patrol(delta: float) -> void:
 	if _update_suspicion(delta):
 		return
+	if _look_for_bodies(delta):
+		return
 	if seeing:
 		# "What was that?" Stop and stare while suspicion builds.
 		velocity = Vector2.ZERO
@@ -466,6 +528,8 @@ func _do_patrol(delta: float) -> void:
 func _do_investigate(delta: float) -> void:
 	if _update_suspicion(delta):
 		return
+	if not body_alarm_pending and _look_for_bodies(delta):
+		return
 	if seeing:
 		velocity = Vector2.ZERO
 		_face_dir((player.global_position - global_position).normalized(), delta, 5.0)
@@ -476,6 +540,8 @@ func _do_investigate(delta: float) -> void:
 	var arrive_dist := 40.0 if get_real_velocity().length() < 20.0 and state_time > 0.3 else 12.0
 	if global_position.distance_to(target_point) > arrive_dist and state_time < 6.0:
 		_move_toward(target_point, _investigate_speed(), delta)
+	elif body_alarm_pending:
+		_raise_body_alarm()
 	elif _on_arrived():
 		return
 	else:
@@ -659,8 +725,10 @@ func _die(cause: String) -> void:
 			if cause == "sneak":
 				Fx.popup(self, above, "SNEAK KILL", Color(0.75, 1.0, 0.6))
 			Fx.hitstop(self, 0.09, 0.05)
-			tw.tween_property(self, "scale", Vector2(1.3, 1.3), 0.35)
-			tw.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.35)
+			_spawn_body.call_deferred()
+			if sprite != null:
+				sprite.visible = false
+			tw.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.15)
 	tw.chain().tween_callback(queue_free)
 
 # --- Drawing ---------------------------------------------------------------------

@@ -51,6 +51,9 @@ func _make_sprite() -> Node2D:
 func _sprite_height() -> float:
 	return 40.0
 
+func _body_weight() -> float:
+	return 0.4   # A dead Gaoler barely budges.
+
 func _physics_process(delta: float) -> void:
 	charge_cd = maxf(charge_cd - delta, 0.0)
 	_heavy_popup_cd = maxf(_heavy_popup_cd - delta, 0.0)
