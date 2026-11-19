@@ -55,7 +55,7 @@ func _ready() -> void:
 func is_dying() -> bool:
 	return broken
 
-func apply_knockback(impulse: Vector2, _stun: float) -> void:
+func apply_knockback(impulse: Vector2, _stun: float, _impact: bool = false) -> void:
 	if broken:
 		return
 	if knock_velocity.length() < STOP_SPEED:
@@ -90,10 +90,10 @@ func _physics_process(delta: float) -> void:
 				continue
 			knock_hits.append(other)
 			if other.is_in_group("enemy") and speed_before >= CRUSH_SPEED:
-				other.take_damage(2 if speed_before >= HEAVY_CRUSH_SPEED else 1, "crate", false)
+				other.take_damage(2 if speed_before >= HEAVY_CRUSH_SPEED else 1, "crush", false)
 				Fx.popup(other, other.global_position + Vector2(0, -28), "CRUSH", Color(1.0, 0.55, 0.3))
 				Fx.hitstop(self, 0.07, 0.05)
-			other.apply_knockback(knock_velocity * 0.8, 0.5)
+			other.apply_knockback(knock_velocity * 0.8, 0.5, true)
 			if "knock_hits" in other:
 				other.knock_hits.append(self)
 			knock_velocity *= 0.3

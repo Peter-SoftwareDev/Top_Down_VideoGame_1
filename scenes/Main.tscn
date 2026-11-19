@@ -10,6 +10,8 @@
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="8_hud"]
 [ext_resource type="Script" path="res://scripts/Crate.gd" id="9_crate"]
 [ext_resource type="Script" path="res://scripts/Pickup.gd" id="10_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/Gaoler.tscn" id="11_gaoler"]
+[ext_resource type="PackedScene" path="res://scenes/Hound.tscn" id="12_hound"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -164,6 +166,24 @@ patrol_points = PackedVector2Array(200, 560, 480, 560, 480, 840, 200, 840)
 [node name="Sentry" parent="Enemies" instance=ExtResource("7_enemy")]
 position = Vector2(1250, 200)
 facing_degrees = 180.0
+
+[node name="Gaoler" parent="Enemies" instance=ExtResource("11_gaoler")]
+position = Vector2(950, 290)
+max_health = 6
+walk_speed = 55.0
+chase_speed = 95.0
+patrol_points = PackedVector2Array(950, 290, 950, 420)
+facing_degrees = 180.0
+
+[node name="HoundA" parent="Enemies" instance=ExtResource("12_hound")]
+position = Vector2(470, 865)
+max_health = 1
+patrol_points = PackedVector2Array(470, 865, 880, 865)
+
+[node name="HoundB" parent="Enemies" instance=ExtResource("12_hound")]
+position = Vector2(880, 875)
+max_health = 1
+patrol_points = PackedVector2Array(880, 875, 470, 875)
 
 [node name="Player" parent="." instance=ExtResource("6_player")]
 position = Vector2(140, 150)

@@ -76,6 +76,13 @@ var swing_kind := ""
 var swing_dir := Vector2.RIGHT
 var shake := 0.0
 var feet: Area2D
+## Scent trail for hounds: recent positions, each with the game time it was left.
+var scent: Array[Dictionary] = []
+var scent_clock := 0.0
+var _scent_timer := 0.0
+
+const SCENT_INTERVAL := 0.2
+const SCENT_LIFETIME := 9.0
 
 @onready var camera: Camera2D = $Camera2D
 
@@ -174,6 +181,7 @@ func _physics_process(delta: float) -> void:
 			use_secondary()
 	move_and_slide()
 	_update_knocked()
+	_leave_scent(delta)
 	queue_redraw()
 
 ## While being thrown by a hit, the player can slide over a rim and fall in.
@@ -189,6 +197,16 @@ func _update_knocked() -> void:
 			collision_mask = L.PLAYER_MASK
 	elif dodge_time <= 0.0:
 		last_safe = global_position
+
+func _leave_scent(delta: float) -> void:
+	scent_clock += delta
+	_scent_timer -= delta
+	if _scent_timer <= 0.0:
+		_scent_timer = SCENT_INTERVAL
+		if scent.is_empty() or scent.back().pos.distance_to(global_position) > 6.0:
+			scent.append({"pos": global_position, "time": scent_clock})
+	while not scent.is_empty() and scent_clock - scent[0].time > SCENT_LIFETIME:
+		scent.pop_front()
 
 func _process(delta: float) -> void:
 	if camera != null:
@@ -239,9 +257,10 @@ func collect(kind: String, amount: int) -> bool:
 func _in_arc(e: Node2D, reach: float, arc_degrees: float) -> bool:
 	var to := e.global_position - global_position
 	var d := to.length()
-	if d > reach + TARGET_RADIUS:
+	var r: float = e.radius if "radius" in e else TARGET_RADIUS
+	if d > reach + r:
 		return false
-	if d < RADIUS + TARGET_RADIUS + 6.0:
+	if d < RADIUS + r + 6.0:
 		return true
 	return absf(aim.angle_to(to)) <= deg_to_rad(arc_degrees) * 0.5
 

@@ -251,7 +251,9 @@ Each idea has a different relationship with the physics, so each one tests somet
 | **Lantern-bearer** | Carries the only light in a dark area and reveals you within it. | A kicked lantern breaks and darkens the area (and could start fires later). | Put the light out, then sneak. | Cistern, Foundry |
 | **Crossbow sentry** | Ranged. Keeps its distance, with a visible aiming line. | Its bolts can hit other guards. | Use cover. Close the distance, or make it shoot its friends. | Foundry |
 
-**Suggested first pair to prototype: Gaoler and Scent-hound.** They sit at opposite ends of the physics (too heavy to kick vs. flies across the room), so together they show whether kicking has depth.
+**Built in the sandbox: Gaoler and Scent-hound.** One change from the table: deep water can't break the hound's trail (the player can't swim), so its trail fades over time and rocks distract it instead. The Gaoler also crushes anything its charge pins against a wall.
+
+Originally suggested as the first pair: They sit at opposite ends of the physics (too heavy to kick vs. flies across the room), so together they show whether kicking has depth.
 
 ## Proposed Answers (draft, not yet decided)
 

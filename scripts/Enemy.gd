@@ -15,7 +15,8 @@ const Fx = preload("res://scripts/Fx.gd")
 
 signal died(enemy: Node, cause: String)
 
-enum State { PATROL, INVESTIGATE, SHOUT, ALERT, WINDUP, LUNGE, RECOVER, KNOCKED, STUNNED, DYING }
+## CHARGE is only used by enemy types that charge (see Gaoler.gd).
+enum State { PATROL, INVESTIGATE, SHOUT, ALERT, WINDUP, LUNGE, RECOVER, KNOCKED, STUNNED, DYING, CHARGE }
 
 @export var max_health: int = 3
 @export var walk_speed: float = 70.0
@@ -68,6 +69,24 @@ const STUCK_TIME := 0.6
 const DETOUR_TIME := 0.5
 const CONE_RAYS := 14
 
+# Per-type tunables. Enemy types (Gaoler.gd, Hound.gd) change these before calling super._ready().
+var radius := RADIUS
+var close_sense := CLOSE_SENSE
+var close_sense_through_walls := false   # Hounds smell you behind cover.
+var attack_range := ATTACK_RANGE
+var windup_time := WINDUP_TIME
+var feint_chance := FEINT_CHANCE
+var lunge_time := LUNGE_TIME
+var lunge_speed := LUNGE_SPEED
+var lunge_knock := LUNGE_KNOCK
+var lunge_damage := 1
+var recover_time := RECOVER_TIME
+var shout_time := SHOUT_TIME
+var shout_text := "HEY!"
+var alarm_radius := ALARM_RADIUS
+## Multiplies every push this enemy receives. Light enemies > 1, heavy < 1.
+var knock_scale := 1.0
+
 var health := 3
 var state: State = State.PATROL
 var state_time := 0.0
@@ -109,6 +128,10 @@ func _ready() -> void:
 	collision_mask = L.ENEMY_WALK_MASK
 	health = max_health
 	home = global_position
+	var body_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if body_shape != null and body_shape.shape is CircleShape2D:
+		body_shape.shape = body_shape.shape.duplicate()
+		body_shape.shape.radius = radius
 	facing = Vector2.RIGHT.rotated(deg_to_rad(facing_degrees))
 	# A tiny sensor at the guard's centre. When it overlaps a hazard's inner zone, the guard falls in.
 	feet = Area2D.new()
@@ -146,9 +169,14 @@ func take_damage(amount: int, cause: String, allow_sneak: bool = true) -> void:
 		_die(cause)
 
 ## A physics push. `stun` seconds of stun begin when the guard stops sliding.
-func apply_knockback(impulse: Vector2, stun: float) -> void:
+## `impact` is true when the push comes from a body crashing into this one
+## (a chain hit or a crate), rather than from a kick, rock or weapon.
+func apply_knockback(impulse: Vector2, stun: float, impact: bool = false) -> void:
 	if state == State.DYING:
 		return
+	_apply_push(impulse * knock_scale, stun)
+
+func _apply_push(impulse: Vector2, stun: float) -> void:
 	if state == State.STUNNED:
 		impulse *= STUNNED_KNOCK_BONUS
 	if state != State.KNOCKED:
@@ -198,6 +226,8 @@ func _physics_process(delta: float) -> void:
 
 	if state == State.KNOCKED:
 		_do_knocked(delta)
+	elif state == State.CHARGE:
+		_do_special(delta)
 	else:
 		match state:
 			State.PATROL:
@@ -213,17 +243,15 @@ func _physics_process(delta: float) -> void:
 				if _player_alive():
 					_face_dir((player.global_position - global_position).normalized(), delta, 10.0)
 				if state_time >= windup_duration:
-					lunge_dir = facing
-					lunge_landed = false
-					_set_state(State.LUNGE)
+					_start_attack()
 			State.LUNGE:
-				velocity = lunge_dir * LUNGE_SPEED
+				velocity = lunge_dir * lunge_speed
 				_try_land_lunge()
-				if state_time >= LUNGE_TIME:
+				if state_time >= lunge_time:
 					_set_state(State.RECOVER)
 			State.RECOVER:
 				velocity = velocity.move_toward(Vector2.ZERO, 2500.0 * delta)
-				if state_time >= RECOVER_TIME:
+				if state_time >= recover_time:
 					_set_state(State.ALERT)
 			State.STUNNED:
 				velocity = Vector2.ZERO
@@ -271,7 +299,9 @@ func _can_see_player(alerted: bool) -> bool:
 	var dist := to.length()
 	if dist > _sight_range(alerted):
 		return false
-	if not alerted and dist > CLOSE_SENSE:
+	if dist <= close_sense and close_sense_through_walls:
+		return true
+	if not alerted and dist > close_sense:
 		if absf(facing.angle_to(to)) > deg_to_rad(vision_angle_degrees) * 0.5:
 			return false
 	return _line_clear(player.global_position)
@@ -286,10 +316,10 @@ func _update_suspicion(delta: float) -> bool:
 	if seeing:
 		last_glimpse = player.global_position
 		var dist := global_position.distance_to(player.global_position)
-		if dist <= CLOSE_SENSE:
+		if dist <= close_sense:
 			suspicion = 1.0
 		else:
-			var t := clampf((dist - CLOSE_SENSE) / (_sight_range(false) - CLOSE_SENSE), 0.0, 1.0)
+			var t := clampf((dist - close_sense) / (_sight_range(false) - close_sense), 0.0, 1.0)
 			var notice_time := lerpf(NOTICE_TIME_NEAR, NOTICE_TIME_FAR, t)
 			if wary:
 				notice_time *= WARY_NOTICE_MULT
@@ -351,6 +381,8 @@ func _do_patrol(delta: float) -> void:
 	if suspicion >= SUSPICION_INVESTIGATE:
 		_investigate(last_glimpse)
 		return
+	if _on_patrol_tick(delta):
+		return
 	if patrol_points.is_empty():
 		_move_toward(home, _patrol_speed(), delta)
 		if global_position.distance_to(home) < 6.0:
@@ -383,7 +415,9 @@ func _do_investigate(delta: float) -> void:
 		return
 	# Walk to the spot (give up after a few seconds if blocked), then look around.
 	if global_position.distance_to(target_point) > 12.0 and state_time < 6.0:
-		_move_toward(target_point, walk_speed * 1.4, delta)
+		_move_toward(target_point, _investigate_speed(), delta)
+	elif _on_arrived():
+		return
 	else:
 		velocity = Vector2.ZERO
 		facing = facing.rotated(2.0 * delta)
@@ -408,10 +442,10 @@ func _do_shout(delta: float) -> void:
 	velocity = Vector2.ZERO
 	if _player_alive():
 		_face_dir((player.global_position - global_position).normalized(), delta, 10.0)
-	if state_time >= SHOUT_TIME:
+	if state_time >= shout_time:
 		has_shouted = true
-		Fx.popup(self, global_position + Vector2(0, -30), "HEY!", Color(1.0, 0.35, 0.3))
-		Fx.alarm(self, global_position, ALARM_RADIUS, player.global_position if _player_alive() else target_point)
+		Fx.popup(self, global_position + Vector2(0, -30), shout_text, Color(1.0, 0.35, 0.3))
+		Fx.alarm(self, global_position, alarm_radius, player.global_position if _player_alive() else target_point)
 		_set_state(State.ALERT)
 
 func _do_chase(delta: float) -> void:
@@ -425,12 +459,7 @@ func _do_chase(delta: float) -> void:
 			velocity = Vector2.ZERO
 			_set_state(State.SHOUT)
 			return
-		if global_position.distance_to(target_point) <= ATTACK_RANGE:
-			velocity = Vector2.ZERO
-			windup_duration = WINDUP_TIME
-			if randf() < FEINT_CHANCE:
-				windup_duration += randf_range(FEINT_EXTRA_MIN, FEINT_EXTRA_MAX)
-			_set_state(State.WINDUP)
+		if _choose_attack():
 			return
 	else:
 		unseen_time += delta
@@ -442,9 +471,46 @@ func _do_chase(delta: float) -> void:
 func _try_land_lunge() -> void:
 	if lunge_landed or not _player_alive():
 		return
-	if global_position.distance_to(player.global_position) < RADIUS + 12.0 + 8.0:
+	if global_position.distance_to(player.global_position) < radius + 12.0 + 8.0:
 		lunge_landed = true
-		player.take_damage(1, global_position, LUNGE_KNOCK)
+		player.take_damage(lunge_damage, global_position, lunge_knock)
+
+# --- Hooks for enemy types --------------------------------------------------------
+
+## Called each patrol tick when the guard has nothing better to do. Return true if handled.
+func _on_patrol_tick(_delta: float) -> bool:
+	return false
+
+## Called when an investigation reaches its spot. Return true to keep going instead of looking around.
+func _on_arrived() -> bool:
+	return false
+
+func _investigate_speed() -> float:
+	return walk_speed * 1.4
+
+## Decide whether to attack now (the player is in sight). Return true if an attack started.
+func _choose_attack() -> bool:
+	if global_position.distance_to(target_point) > attack_range:
+		return false
+	_begin_windup(windup_time)
+	return true
+
+func _begin_windup(base_time: float) -> void:
+	velocity = Vector2.ZERO
+	windup_duration = base_time
+	if randf() < feint_chance:
+		windup_duration += randf_range(FEINT_EXTRA_MIN, FEINT_EXTRA_MAX)
+	_set_state(State.WINDUP)
+
+## Called when the wind-up finishes.
+func _start_attack() -> void:
+	lunge_dir = facing
+	lunge_landed = false
+	_set_state(State.LUNGE)
+
+## Movement for the CHARGE state (enemy types that charge).
+func _do_special(_delta: float) -> void:
+	_set_state(State.ALERT)
 
 func _do_knocked(delta: float) -> void:
 	var speed_before := knock_velocity.length()
@@ -458,7 +524,7 @@ func _do_knocked(delta: float) -> void:
 		if other is Node and other.has_method("apply_knockback"):
 			if other != self and not knock_hits.has(other) and not other.is_dying():
 				knock_hits.append(other)
-				other.apply_knockback(knock_velocity * CHAIN_TRANSFER, 0.4)
+				other.apply_knockback(knock_velocity * CHAIN_TRANSFER, 0.4, true)
 				if "knock_hits" in other:
 					other.knock_hits.append(self)
 				knock_velocity *= 0.3
@@ -480,7 +546,7 @@ func _do_knocked(delta: float) -> void:
 		knock_velocity = Vector2.ZERO
 		if knock_peak >= CRUMBLE_MIN_SPEED:
 			for h in get_tree().get_nodes_in_group("hazard"):
-				if h.try_crumble(global_position, RADIUS):
+				if h.try_crumble(global_position, radius):
 					_die("pit")
 					return
 		set_deferred("collision_mask", L.ENEMY_WALK_MASK)
@@ -540,7 +606,7 @@ func _die(cause: String) -> void:
 
 func _update_cone() -> void:
 	cone_points.clear()
-	if state == State.KNOCKED or state == State.STUNNED or state == State.DYING:
+	if state == State.KNOCKED or state == State.STUNNED or state == State.DYING or state == State.CHARGE:
 		return
 	var space := get_world_2d().direct_space_state
 	var half := deg_to_rad(vision_angle_degrees) * 0.5
@@ -553,6 +619,17 @@ func _update_cone() -> void:
 			end = hit.position
 		cone_points.append(end - global_position)
 
+func _base_color() -> Color:
+	return Color(0.72, 0.24, 0.2)
+
+func _draw_body(body: Color) -> void:
+	draw_circle(Vector2.ZERO, radius, body)
+	draw_circle(facing * (radius - 4.0), 4.0, Color(0.25, 0.05, 0.05))
+
+## Extra overlays for enemy types (telegraphs etc.).
+func _draw_extra() -> void:
+	pass
+
 func _draw() -> void:
 	# Vision cone: white when calm, shading to yellow then red as suspicion builds.
 	if cone_points.size() >= 2:
@@ -561,12 +638,12 @@ func _draw() -> void:
 			var calm := Color(1.0, 0.85, 0.3, 0.12) if state == State.INVESTIGATE else Color(1, 1, 1, 0.06)
 			cc = calm.lerp(Color(1.0, 0.3, 0.2, 0.2), suspicion)
 		else:
-			cc = Color(1.0, 0.3, 0.25, 0.12)
+			cc = Color(1.0, 0.3, 0.25, 0.07)
 		var cols := PackedColorArray([cc, cc, cc])
 		for i in cone_points.size() - 1:
 			draw_primitive(PackedVector2Array([Vector2.ZERO, cone_points[i], cone_points[i + 1]]), cols, PackedVector2Array())
 
-	var body := Color(0.72, 0.24, 0.2)
+	var body := _base_color()
 	var windup_k := clampf(state_time / windup_duration, 0.0, 1.0)
 	if state == State.STUNNED:
 		body = Color(0.45, 0.45, 0.75)
@@ -574,35 +651,35 @@ func _draw() -> void:
 		body = body.lerp(Color(1.0, 0.65, 0.2), windup_k)
 	if hit_flash > 0.0:
 		body = Color.WHITE
-	draw_circle(Vector2.ZERO, RADIUS + 2.0, Color(0, 0, 0, 0.35))
+	draw_circle(Vector2.ZERO, radius + 2.0, Color(0, 0, 0, 0.35))
 	if wary and state != State.DYING:
-		draw_arc(Vector2.ZERO, RADIUS + 2.5, 0.0, TAU, 24, Color(1.0, 0.75, 0.3, 0.6), 1.5)
-	draw_circle(Vector2.ZERO, RADIUS, body)
-	draw_circle(facing * (RADIUS - 4.0), 4.0, Color(0.25, 0.05, 0.05))
+		draw_arc(Vector2.ZERO, radius + 2.5, 0.0, TAU, 24, Color(1.0, 0.75, 0.3, 0.6), 1.5)
+	_draw_body(body)
+	_draw_extra()
 
 	if state == State.WINDUP:
-		draw_arc(Vector2.ZERO, RADIUS + 4.0 + 16.0 * (1.0 - windup_k), 0.0, TAU, 24, Color(1.0, 0.6, 0.2, 0.9), 2.0)
+		draw_arc(Vector2.ZERO, radius + 4.0 + 16.0 * (1.0 - windup_k), 0.0, TAU, 24, Color(1.0, 0.6, 0.2, 0.9), 2.0)
 	if state == State.SHOUT:
 		var sk := clampf(state_time / SHOUT_TIME, 0.0, 1.0)
 		for i in 2:
-			draw_arc(Vector2.ZERO, RADIUS + 6.0 + i * 7.0 + sk * 6.0, -PI * 0.9, -PI * 0.1, 10, Color(1.0, 0.3, 0.25, 0.8 - i * 0.3), 2.0)
+			draw_arc(Vector2.ZERO, radius + 6.0 + i * 7.0 + sk * 6.0, -PI * 0.9, -PI * 0.1, 10, Color(1.0, 0.3, 0.25, 0.8 - i * 0.3), 2.0)
 	if state == State.STUNNED:
 		for k in 3:
 			var a := state_time * 4.0 + k * TAU / 3.0
-			draw_circle(Vector2(cos(a) * 12.0, -RADIUS - 8.0 + sin(a) * 4.0), 2.5, Color(1.0, 1.0, 0.6))
+			draw_circle(Vector2(cos(a) * 12.0, -radius - 8.0 + sin(a) * 4.0), 2.5, Color(1.0, 1.0, 0.6))
 
 	if state != State.DYING and health < max_health:
 		for i in max_health:
 			var pc := Color(0.9, 0.3, 0.25) if i < health else Color(0.2, 0.2, 0.2)
-			draw_rect(Rect2(-12.0 + i * 9.0, RADIUS + 5.0, 7.0, 3.0), pc)
+			draw_rect(Rect2(-12.0 + i * 9.0, radius + 5.0, 7.0, 3.0), pc)
 
 	# Suspicion meter above the head while it's building.
 	if (state == State.PATROL or state == State.INVESTIGATE) and suspicion > 0.02:
-		draw_rect(Rect2(-12, -RADIUS - 12, 24, 4), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(-12, -RADIUS - 12, 24 * suspicion, 4), Color(1.0, 0.85, 0.3).lerp(Color(1.0, 0.3, 0.2), suspicion))
+		draw_rect(Rect2(-12, -radius - 12, 24, 4), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(-12, -radius - 12, 24 * suspicion, 4), Color(1.0, 0.85, 0.3).lerp(Color(1.0, 0.3, 0.2), suspicion))
 
 	var font := ThemeDB.fallback_font
-	if state == State.ALERT or state == State.WINDUP or state == State.LUNGE or state == State.RECOVER or state == State.SHOUT:
-		draw_string(font, Vector2(-3, -RADIUS - 6), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.35, 0.3))
+	if state == State.ALERT or state == State.WINDUP or state == State.LUNGE or state == State.RECOVER or state == State.SHOUT or state == State.CHARGE:
+		draw_string(font, Vector2(-3, -radius - 6), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.35, 0.3))
 	elif state == State.INVESTIGATE and suspicion <= 0.02:
-		draw_string(font, Vector2(-4, -RADIUS - 6), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.85, 0.3))
+		draw_string(font, Vector2(-4, -radius - 6), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.85, 0.3))

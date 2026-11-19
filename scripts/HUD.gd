@@ -59,7 +59,7 @@ func _draw_hud() -> void:
 	var lines := [
 		"Guards left: %d / %d" % [main.enemies_left, main.enemies_total],
 		"Bolt %d   Blade %d   Sneak %d" % [k.bolt, k.blade, k.sneak],
-		"Pit %d   Water %d   Crate %d" % [k.pit, k.water, k.crate],
+		"Pit %d   Water %d   Crush %d" % [k.pit, k.water, k.crush],
 	]
 	var box_w := 250.0
 	canvas.draw_rect(Rect2(vp.x - box_w - 12, 12, box_w, 74), Color(0, 0, 0, 0.5))

@@ -6,7 +6,7 @@ const Fx = preload("res://scripts/Fx.gd")
 @onready var player = $Player
 @onready var hud = $HUD
 
-var kills := {"bolt": 0, "blade": 0, "sneak": 0, "pit": 0, "water": 0, "crate": 0}
+var kills := {"bolt": 0, "blade": 0, "sneak": 0, "pit": 0, "water": 0, "crush": 0}
 var enemies_total := 0
 var enemies_left := 0
 var _slow_until_ms := 0
