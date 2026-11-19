@@ -26,6 +26,7 @@ A gray-box test area for physics combat, before building real floors, keys and p
 - **Gaoler (brute):** big, slow, 6 health. Kicks and rocks don't move it ("TOO HEAVY"). Only a crash from a guard or crate, or slamming into a wall, staggers it, and while staggered it can be kicked and takes double damage. From mid-range it telegraphs a straight shoulder charge with an orange lane on the floor. Sidestep it into a wall and it staggers. Get hit and you take 2 damage and get thrown hard (possibly into a pit). It bowls over guards and crates in its path, and crushes anything it pins against a wall. It won't charge at you across a pit, water or a half wall (barricade), but if the chasm is *behind* you, sidestep and it overshoots straight in.
 - **Scent-hounds (pair):** fast and fragile (1 health). Short sight, but they follow the trail you walked over the last ~9 seconds, and smell you through cover up close. Their bark carries further than a shout. They're light, so kicks and rocks send them twice as far. Shake them off by outpacing the trail, or distract them with a rock.
 - **Stealth bonus:** a lethal hit on an unaware guard kills it outright. Hits on stunned guards do double damage.
+- **Floors and footsteps:** the test room has baked floor art: imperial paving in the main hall, hewn rock on the Bridge with an **iron catwalk** between the pits, hewn cells with **straw** in the Dark Hall, and Cistern **brick** around the Channel. Walking makes noise depending on the floor: straw is silent, stone and brick are quiet (only very close guards hear), puddles splash, and iron is loud enough to draw guards from about 160px. Crouching is always silent. The HUD shows the floor under you and how loud it is.
 - **Feel:** a short hit stop on heavy hits, and slow motion on falls and drownings.
 
 ### Controls
@@ -41,6 +42,16 @@ A gray-box test area for physics combat, before building real floors, keys and p
 | Back to weapon select | Esc |
 | Reset room | R |
 
+## Floor art
+
+The floor is baked from the room's layout by `tools/pixelart/bake_test_room.py` (Python 3 with Pillow and NumPy). After moving walls or hazards in `scenes/Main.tscn`, rebake:
+
+```
+python3 tools/pixelart/bake_test_room.py
+```
+
+It writes `assets/art/rooms/test_room_albedo.png`, `test_room_normal.png` and `test_room_materials.png` (the footstep map). The game works without Python; it's only needed to rebake. Material swatches for all of Gloamhold come from `tools/pixelart/materials.py`.
+
 ## Running the project
 
 Open `project.godot` in Godot 4.7 and press F5.
@@ -54,6 +65,7 @@ Open `project.godot` in Godot 4.7 and press F5.
 - `scripts/Hazard.gd`: pits and deep water (set `kind`, `size` and `crumbles` in the inspector).
 - `scripts/Bolt.gd`, `scripts/Rock.gd`, `scripts/Pickup.gd`: projectiles and ammo pickups.
 - `scripts/Crate.gd`: breakable, kickable crates (set `contents` in the inspector).
-- `scripts/Wall.gd`, `scripts/Floor.gd`, `scripts/Torch.gd`: gray-box level pieces (tick `low` on a wall to make it a barricade).
+- `scripts/Floor.gd`: shows the baked floor (with its normal map) and answers "what material is here?" for footsteps.
+- `scripts/Wall.gd`, `scripts/Torch.gd`: gray-box level pieces (tick `low` on a wall to make it a barricade).
 - `scripts/Fx.gd`, `scripts/fx/`: popups, rings, noise and screen shake.
 - `scripts/Layers.gd`: physics layer numbers.

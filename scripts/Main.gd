@@ -30,6 +30,7 @@ func _ready() -> void:
 	lamp.texture_scale = 2.0
 	lamp.energy = 0.55
 	lamp.color = Color(1.0, 0.93, 0.82)
+	lamp.height = 20.0
 	player.add_child(lamp)
 
 	# Popups and noise rings go on their own layer so the darkness doesn't hide them.

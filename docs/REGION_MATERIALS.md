@@ -23,8 +23,10 @@
 
 Swatches: `assets/art/style_test/materials/swatches_penance_cells.png`. How they meet: `cellblock_vignette.png`.
 
+Weeping Cistern swatches: `swatches_weeping_cistern.png`. Cinder Foundry swatches: `swatches_cinder_foundry.png`.
+
 ### Floor 2: The Weeping Cistern
-- **Herringbone brick** under vaults, slick with algae
+- **Basketweave brick** under vaults, slick with algae (herringbone is an alternative)
 - **Tooled stone** with carved water channels and drains
 - **Timber walkways and iron catwalks** over deep water (some planks rotten)
 
@@ -45,7 +47,9 @@ Swatches: `assets/art/style_test/materials/swatches_penance_cells.png`. How they
 - **Built to natural:** broken ends of paving give way to rubble, then bare rock.
 - **Surface layers** (straw, moss, soot, ash) fade out patch by patch, never along a straight line.
 
-## Floors as gameplay (proposed)
+## Floors as gameplay (footsteps built; the rest proposed)
+
+**Built:** footstep noise by material in the test room (straw silent, stone and brick quiet, puddles 120px, iron 160px; crouching is always silent). The bake writes a material map, so the art and the gameplay can never disagree.
 Each material can change how you sneak, so players read a room by its floor.
 
 | Floor | Footsteps | Other effect |

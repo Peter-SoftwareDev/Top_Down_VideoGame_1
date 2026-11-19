@@ -1,9 +1,11 @@
-"""Floor material generators for the Penance Cells (Gloamhold's prison floor).
+"""Floor material generators for Gloamhold: the Penance Cells, the Weeping Cistern and the Cinder Foundry.
 
 Each generator returns (albedo RGB float array, height array, emissive RGB array) at any size.
 Outputs to assets/art/style_test/materials/:
   swatches_penance_cells.png    each candidate material, lit the same way, labelled
   cellblock_vignette.png        the materials together in a small cell block (x2)
+  swatches_weeping_cistern.png  Floor 2 candidates
+  swatches_cinder_foundry.png   Floor 3 candidates
 Run: python3 tools/pixelart/materials.py
 """
 import os, sys, math, random
@@ -87,25 +89,27 @@ def dressed_slabs(h, w, seed=2):
     r = random.Random(seed)
     wx = XX + (fbm(h, w, 40, 2, seed + 1) - 0.5) * 3   # slabs have shifted over the centuries
     wy = YY + (fbm(h, w, 40, 2, seed + 2) - 0.5) * 3
-    height = np.zeros((h, w)); tone = np.zeros((h, w)); edge = np.full((h, w), 99.0)
-    sid = np.zeros((h, w), int)
-    y = -r.randint(0, 20); k = 0
+    height = np.full((h, w), 0.5); tone = np.zeros((h, w)); edge = np.full((h, w), 99.0)
+    y = -r.randint(0, 20)
     while y < h + 40:
-        ch = r.choice([r.randint(22, 34), r.randint(34, 52), r.randint(52, 70)])
+        ch = r.choice([r.randint(26, 40), r.randint(40, 58), r.randint(58, 80)])
         x = -r.randint(0, 40)
         while x < w + 60:
-            sw = int(ch * r.uniform(0.9, 2.4))
-            m = (wx >= x) & (wx < x + sw) & (wy >= y) & (wy < y + ch)
-            ex = np.minimum(wx - x, x + sw - wx); ey = np.minimum(wy - y, y + ch - wy)
-            e = np.minimum(ex, ey)
-            # Chipped, rounded corners.
-            corner = np.hypot(np.maximum(4 - ex, 0), np.maximum(4 - ey, 0))
-            e = np.where(corner > 0, np.minimum(e, 4 - corner), e)
-            sink = r.uniform(-0.12, 0.08); slope_x = r.uniform(-0.002, 0.002); slope_y = r.uniform(-0.002, 0.002)
-            height = np.where(m, 0.5 + sink + (wx - x) * slope_x + (wy - y) * slope_y, height)
-            tone = np.where(m, r.random(), tone)
-            edge = np.where(m, e, edge); sid = np.where(m, k, sid)
-            k += 1; x += sw
+            # Mostly squarish slabs, sometimes long ones: paving, not brickwork.
+            sw = int(ch * (r.uniform(0.8, 1.3) if r.random() < 0.7 else r.uniform(1.4, 2.2)))
+            ys = slice(max(0, y - 4), min(h, y + ch + 4)); xs = slice(max(0, x - 4), min(w, x + sw + 4))
+            if ys.start < ys.stop and xs.start < xs.stop:
+                bx, by = wx[ys, xs], wy[ys, xs]
+                m = (bx >= x) & (bx < x + sw) & (by >= y) & (by < y + ch)
+                ex = np.minimum(bx - x, x + sw - bx); ey = np.minimum(by - y, y + ch - by)
+                e = np.minimum(ex, ey)
+                corner = np.hypot(np.maximum(4 - ex, 0), np.maximum(4 - ey, 0))   # chipped corners
+                e = np.where(corner > 0, np.minimum(e, 4 - corner), e)
+                sink = r.uniform(-0.12, 0.08); sx_, sy_ = r.uniform(-0.002, 0.002), r.uniform(-0.002, 0.002)
+                height[ys, xs] = np.where(m, 0.5 + sink + (bx - x) * sx_ + (by - y) * sy_, height[ys, xs])
+                tone[ys, xs] = np.where(m, r.random(), tone[ys, xs])
+                edge[ys, xs] = np.where(m, e, edge[ys, xs])
+            x += sw
         y += ch
     joint = edge < 1.3 + fbm(h, w, 20, 2, seed + 3) * 1.2
     bevel = np.clip(edge / 4.0, 0, 1)
@@ -115,19 +119,24 @@ def dressed_slabs(h, w, seed=2):
     alb = mix(col("stone2"), col("stone4"), t)
     alb = mix(alb, col("stone5"), bevel * 0.12)
     alb = np.where(joint[..., None], col("stone1") * 0.7 + col("stone0") * 0.3, alb)
-    # Cracks through a few slabs.
-    cr = random.Random(seed + 10); crack = np.zeros((h, w), bool)
-    for _ in range(int(w * h / 4000)):
-        x, y0 = cr.randint(0, w - 1), cr.randint(0, h - 1)
-        yy = y0
-        for _ in range(cr.randint(8, 22)):
-            if not (0 <= x < w and 0 <= yy < h) or joint[yy, x]:
-                break
-            crack[yy, x] = True
-            x += cr.choice([-1, 0, 1]); yy += cr.choice([0, 1, 1])
+    crack = cracks(h, w, seed + 10, joint, int(w * h / 4000))
     alb = np.where(crack[..., None], col("stone0"), alb)
     height = np.where(crack, 0.15, height)
     return alb, height, np.zeros((h, w, 3))
+
+def cracks(h, w, seed, stop_mask, n):
+    cr = random.Random(seed); crack = np.zeros((h, w), bool)
+    for _ in range(n):
+        x, yy = cr.randint(0, w - 1), cr.randint(0, h - 1)
+        for _ in range(cr.randint(8, 22)):
+            if not (0 <= x < w and 0 <= yy < h) or stop_mask[yy, x]:
+                break
+            crack[yy, x] = True
+            x += cr.choice([-1, 0, 1]); yy += cr.choice([0, 1, 1])
+    return crack
+
+def hash2(a, b, seed):
+    return (np.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453) % 1.0
 
 # --- 3. Packed earth and straw: inside the cells ----------------------------------------
 def earth_straw(h, w, seed=3, straw_amount=1.0):
@@ -212,6 +221,163 @@ def bronze_inlay(h, w, seed=5):
     height = np.where(inlay, height + 0.12, height)
     return alb, height, emis
 
+# ===== Weeping Cistern ===================================================================
+def basketweave_brick(h, w, seed=20, u=10, damp=0.0):
+    """Brick paving in a basketweave: pairs of bricks alternating direction."""
+    YY, XX = grid(h, w)
+    wx = XX + (fbm(h, w, 30, 2, seed) - 0.5) * 2.5; wy = YY + (fbm(h, w, 30, 2, seed + 1) - 0.5) * 2.5
+    B = 2 * u
+    bx = np.floor(wx / B); by = np.floor(wy / B)
+    lx = wx - bx * B; ly = wy - by * B
+    horiz = ((bx + by) % 2) == 0
+    row = np.floor(ly / u); cl = np.floor(lx / u)
+    e_h = np.minimum(np.minimum(lx, B - lx), np.minimum(ly - row * u, (row + 1) * u - ly))
+    e_v = np.minimum(np.minimum(ly, B - ly), np.minimum(lx - cl * u, (cl + 1) * u - lx))
+    edge = np.where(horiz, e_h, e_v)
+    tone = hash2(bx * 3 + np.where(horiz, row, cl), by, seed)
+    joint = edge < 1.0
+    bevel = np.clip(edge / 2.5, 0, 1)
+    brick = mix(col("red0") * 0.35 + col("stone2") * 0.65, col("wood1") * 0.3 + col("stone3") * 0.7, tone * 0.7 + fbm(h, w, 90, 2, seed + 2) * 0.3)
+    alb = mix(brick, col("stone4"), bevel * 0.1)
+    alb = np.where(joint[..., None], col("stone1"), alb)
+    height = np.where(joint, 0.15, 0.4 + bevel * 0.2 + tone * 0.1)
+    if damp > 0:
+        wet = np.clip(fbm(h, w, 50, 3, seed + 3) * 1.3 - 0.4 + damp * 0.6, 0, 1)
+        algae = joint & (fbm(h, w, 6, 2, seed + 4) < wet * 0.6) & (fbm(h, w, 25, 2, seed + 6) > 0.5)
+        alb = mix(alb, col("water1") * 0.5 + col("stone1") * 0.5, wet * 0.35)
+        alb = np.where(algae[..., None], col("rift0") * 0.8 + col("stone1") * 0.2, alb)
+        sheen = (wet > 0.6) & (bevel > 0.6) & (fbm(h, w, 4, 1, seed + 5) > 0.75)
+        alb = np.where(sheen[..., None], col("water3") * 0.5 + col("stone4") * 0.5, alb)   # slick highlights
+    return alb, height, np.zeros((h, w, 3))
+
+def tooled_channel(h, w, seed=21):
+    """Dressed stone with a carved water channel running through it."""
+    alb, height, emis = dressed_slabs(h, w, seed)
+    YY, XX = grid(h, w)
+    c0, c1 = h * 0.42, h * 0.42 + 18
+    ch = (YY >= c0) & (YY < c1)
+    e = np.minimum(YY - c0, c1 - 1 - YY)
+    flow = np.sin(XX * 0.25 + np.sin(YY * 0.7) * 2 + fbm(h, w, 12, 2, seed + 1) * 5)
+    water = mix(col("water1"), col("water3"), np.clip(flow * 0.5 + 0.3, 0, 1) * 0.6)
+    alb = np.where(ch[..., None], water, alb)
+    lip = ch & (e < 2)
+    alb = np.where(lip[..., None], col("stone1"), alb)
+    height = np.where(ch, 0.05, height)
+    edge_band = (~ch) & ((np.abs(YY - c0 + 1.5) < 1.5) | (np.abs(YY - c1 - 0.5) < 1.5))
+    alb = np.where(edge_band[..., None], col("stone5"), alb)
+    return alb, height, emis
+
+def timber_walkway(h, w, seed=22, rotten=0.15, under="water"):
+    """Planks laid across joists. Some are rotten: dark, broken, with gaps to whatever is below."""
+    YY, XX = grid(h, w)
+    r = random.Random(seed)
+    pw = 11
+    row = np.floor(YY / pw)
+    # Butt joints at random places along each plank row.
+    offs = np.array([r.randint(0, 80) for _ in range(int(h / pw) + 2)])
+    seg_len = np.array([r.randint(60, 140) for _ in range(int(h / pw) + 2)])
+    ri = row.astype(int)
+    along = XX + offs[ri]
+    seg = np.floor(along / seg_len[ri])
+    e_y = np.minimum(YY - row * pw, (row + 1) * pw - 1 - YY)
+    e_x = np.minimum(along - seg * seg_len[ri], (seg + 1) * seg_len[ri] - 1 - along)
+    edge = np.minimum(e_y, e_x)
+    pid = hash2(row, seg, seed)
+    rot = pid < rotten
+    grain = value_noise(h, w, 3, seed + 1) * 0.3 + np.sin(XX * 0.05 + row * 7 + fbm(h, w, 8, 2, seed + 2) * 4) * 0.25
+    wood = mix(col("wood0"), col("wood1") * 0.7 + col("stone3") * 0.3, np.clip(0.5 + grain + pid * 0.3, 0, 1))
+    wood = np.where(rot[..., None], mix(col("wood0"), col("rift0") * 0.5 + col("wood0") * 0.5, 0.5), wood)
+    gap = (e_y < 1) | (e_x < 1)
+    hole = rot & (fbm(h, w, 7, 2, seed + 3) > 0.62)
+    below = col("water1") if under == "water" else col("void")
+    alb = np.where((gap | hole)[..., None], below, wood)
+    height = np.where(gap | hole, 0.0, 0.5 + np.clip(edge / 3, 0, 1) * 0.15 + grain * 0.1)
+    nail = (e_x >= 2) & (e_x < 3) & (np.abs(e_y - pw / 2 + 0.5) < 3) & (np.abs(e_y - pw / 2 + 0.5) > 1.5)
+    alb = np.where((nail & ~rot)[..., None], col("metal1"), alb)
+    return alb, height, np.zeros((h, w, 3))
+
+def catwalk(h, w, seed=23, under="water"):
+    """A fine iron grating, with water (or the Rift's darkness) showing through."""
+    YY, XX = grid(h, w)
+    if under == "water":
+        ripple = 0.35 + 0.2 * np.sin(XX * 0.15 + YY * 0.5) * np.sin(YY * 0.27)
+        alb = mix(col("water0"), col("water2"), ripple); emis = np.zeros((h, w, 3))
+    else:
+        alb = np.tile(col("void"), (h, w, 1)); emis = np.zeros((h, w, 3))
+        r = random.Random(seed)
+        for _ in range(int(w * h / 600)):
+            x, y = r.randrange(w), r.randrange(h)
+            alb[y, x] = col("rift2"); emis[y, x] += col("rift3") * 0.8
+    height = np.zeros((h, w))
+    p = 6
+    bars = ((XX % p) < 2) | ((YY % p) < 2)
+    rust = fbm(h, w, 20, 3, seed + 1)
+    iron = mix(col("metal0"), col("metal1"), np.where(((XX % p) < 2) & ((YY % p) < 2), 0.9, 0.5))
+    iron = mix(iron, col("fire1") * 0.5 + col("wood1") * 0.5, np.clip((rust - 0.55) * 3, 0, 1))
+    alb = np.where(bars[..., None], iron, alb)
+    height = np.where(bars, 0.7, 0.0)
+    return alb, height, emis
+
+# ===== Cinder Foundry ====================================================================
+def iron_plates(h, w, seed=30):
+    """Riveted cast-iron floor plates: some with a raised tread, all scuffed, rusted and sooty."""
+    YY, XX = grid(h, w)
+    P = 48
+    px = np.floor(XX / P); py = np.floor(YY / P)
+    lx = XX - px * P; ly = YY - py * P
+    edge = np.minimum(np.minimum(lx, P - 1 - lx), np.minimum(ly, P - 1 - ly))
+    pid = hash2(px, py, seed)
+    seam = edge < 1
+    tread = (pid > 0.5) & ((((XX + YY) % 8) < 2) & (((XX - YY) % 8) < 2)) & (edge > 4)
+    rivet = (edge >= 3) & (edge < 5) & (((lx - 3) % 8 < 2) & ((ly - 3) % 8 < 2))
+    base = mix(col("metal0"), col("metal1"), 0.35 + pid * 0.3 + fbm(h, w, 60, 2, seed + 1) * 0.2)
+    rust = np.clip((fbm(h, w, 25, 3, seed + 2) - 0.55) * 3, 0, 1)
+    soot = np.clip((fbm(h, w, 70, 3, seed + 3) - 0.45) * 2, 0, 1)
+    alb = mix(base, col("fire1") * 0.5 + col("wood1") * 0.5, rust * 0.7)
+    alb = mix(alb, col("stone0"), soot * 0.6)
+    alb = np.where(tread[..., None], col("metal1") * 0.6 + col("metal2") * 0.4, alb)
+    alb = np.where(rivet[..., None], col("metal2"), alb)
+    alb = np.where(seam[..., None], col("void"), alb)
+    height = np.where(seam, 0.0, 0.5 + tread * 0.15 + rivet * 0.3)
+    return alb, height, np.zeros((h, w, 3))
+
+def running_bond_brick(h, w, seed=31, u=8, L=18):
+    """Hearth brick in running bond, stained by soot."""
+    YY, XX = grid(h, w)
+    row = np.floor(YY / u)
+    off = (row % 2) * (L / 2)
+    cl = np.floor((XX + off) / L)
+    e = np.minimum(np.minimum(YY - row * u, (row + 1) * u - 1 - YY), np.minimum(XX + off - cl * L, (cl + 1) * L - 1 - XX - off))
+    tone = hash2(row, cl, seed)
+    joint = e < 1
+    brick = mix(col("red0") * 0.6 + col("stone1") * 0.4, col("red1") * 0.3 + col("stone3") * 0.7, tone * 0.7 + fbm(h, w, 80, 2, seed + 1) * 0.3)
+    soot = np.clip((fbm(h, w, 45, 3, seed + 2) - 0.35) * 2.2, 0, 1)
+    alb = mix(brick, col("stone0"), soot * 0.75)
+    alb = np.where(joint[..., None], col("stone0"), alb)
+    height = np.where(joint, 0.15, 0.45 + np.clip(e / 2.5, 0, 1) * 0.2)
+    return alb, height, np.zeros((h, w, 3))
+
+def slag_channel(h, w, seed=32):
+    """Cooled slag: dark glassy crust with cracks still glowing from the heat beneath."""
+    YY, XX = grid(h, w)
+    n = fbm(h, w, 40, 4, seed)
+    alb = mix(col("void"), col("metal0"), np.clip(n * 1.5 - 0.3, 0, 1))
+    glint = fbm(h, w, 3, 1, seed + 1) > 0.86
+    alb = np.where(glint[..., None], col("metal1"), alb)
+    ridge = np.abs(fbm(h, w, 28, 3, seed + 2) - 0.5)
+    keep = fbm(h, w, 60, 2, seed + 3) > 0.45     # cracks only in places
+    crack = (ridge < 0.009) & keep
+    core = (ridge < 0.0035) & keep
+    heat = np.clip(1 - ridge / 0.05, 0, 1) ** 2 * keep
+    emis = np.zeros((h, w, 3))
+    emis += heat[..., None] * col("fire2") * 0.35
+    alb = np.where(crack[..., None], col("fire3"), alb)
+    alb = np.where(core[..., None], col("fire5"), alb)
+    emis = np.where(crack[..., None], col("fire3") * 0.7, emis)
+    emis = np.where(core[..., None], col("fire5") * 1.2, emis)
+    height = n * 0.5 - crack * 0.2
+    return alb, height, emis
+
 # --- Lighting and palette ------------------------------------------------------------
 PAL = np.array([st.rgb(n) for n in st.PALETTE], np.float64) / 255.0
 
@@ -270,6 +436,36 @@ def swatches():
         d.text((x, y + SH * scale + 6), f"{i + 1}. {name}", fill=st.rgb("rag2"))
         d.text((x, y + SH * scale + 20), where, fill=st.rgb("stone7"))
     sheet.save(os.path.join(OUT, "swatches_penance_cells.png"))
+
+def sheet(name, items, SW=240, SH=180):
+    scale, pad, label_h, cols = 2, 16, 40, 3
+    rows = math.ceil(len(items) / cols)
+    img = Image.new("RGB", (cols * (SW * scale + pad) + pad, rows * (SH * scale + pad + label_h) + pad), st.rgb("stone0"))
+    d = ImageDraw.Draw(img)
+    fire = col("fire4")
+    for i, (title, where, (alb, hgt, emis)) in enumerate(items):
+        lit = light(alb, hgt, emis, [(30, 20, 300, fire, 2.2)])
+        tile = to_img(lit).resize((SW * scale, SH * scale), Image.NEAREST)
+        x = pad + (i % cols) * (SW * scale + pad); y = pad + (i // cols) * (SH * scale + pad + label_h)
+        img.paste(tile, (x, y))
+        d.text((x, y + SH * scale + 6), f"{i + 1}. {title}", fill=st.rgb("rag2"))
+        d.text((x, y + SH * scale + 20), where, fill=st.rgb("stone7"))
+    img.save(os.path.join(OUT, name))
+
+def cistern_and_foundry():
+    SW, SH = 240, 180
+    sheet("swatches_weeping_cistern.png", [
+        ("Basketweave brick", "vaulted floors", basketweave_brick(SH, SW)),
+        ("Brick, slick with algae", "near the water", basketweave_brick(SH, SW, 24, damp=1.0)),
+        ("Tooled stone + channel", "carved waterways", tooled_channel(SH, SW)),
+        ("Timber walkway", "over deep water (one rotten plank)", timber_walkway(SH, SW, rotten=0.12)),
+        ("Iron catwalk", "grating over water", catwalk(SH, SW)),
+    ])
+    sheet("swatches_cinder_foundry.png", [
+        ("Cast-iron plates", "riveted, with tread", iron_plates(SH, SW)),
+        ("Hearth brick", "soot-stained running bond", running_bond_brick(SH, SW)),
+        ("Slag channel", "cooled crust, glowing cracks", slag_channel(SH, SW)),
+    ])
 
 # --- Cell-block vignette: how the materials meet ---------------------------------------------
 def vignette():
@@ -342,4 +538,5 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     swatches()
     vignette()
+    cistern_and_foundry()
     print("Wrote", OUT)

@@ -20,6 +20,9 @@ script = ExtResource("1_main")
 position = Vector2(1100, 700)
 script = ExtResource("2_floor")
 size = Vector2(2200, 1400)
+albedo_path = "res://assets/art/rooms/test_room_albedo.png"
+normal_path = "res://assets/art/rooms/test_room_normal.png"
+materials_path = "res://assets/art/rooms/test_room_materials.png"
 
 [node name="Hazards" type="Node2D" parent="."]
 

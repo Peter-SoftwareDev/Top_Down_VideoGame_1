@@ -33,6 +33,7 @@ func _ready() -> void:
 	light.texture_scale = light_radius / 128.0
 	light.color = Color(1.0, 0.68, 0.38)
 	light.shadow_enabled = true
+	light.height = 28.0   # How high the flame sits: used to shade normal-mapped floors.
 	light.shadow_color = Color(0, 0, 0, 0.85)
 	light.enabled = lit
 	add_child(light)

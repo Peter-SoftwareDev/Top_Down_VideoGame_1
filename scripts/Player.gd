@@ -94,6 +94,12 @@ var scent_clock := 0.0
 var _scent_timer := 0.0
 
 const SCENT_INTERVAL := 0.2
+# Footsteps: how far each step can be heard, by floor material (crouching is always silent).
+const STEP_INTERVAL := 0.38
+const STEP_NOISE := {"straw": 0.0, "stone": 40.0, "brick": 50.0, "water": 120.0, "iron": 160.0}
+const STEP_RING_MIN := 100.0   # Only loud steps show a noise ring.
+var floor_material := "stone"
+var _step_timer := 0.0
 const SCENT_LIFETIME := 9.0
 
 @onready var camera: Camera2D = $Camera2D
@@ -195,6 +201,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_knocked()
 	_leave_scent(delta)
+	_footsteps(delta)
 	light_level = light_override if light_override >= 0.0 else Fx.light_level(self, global_position)
 	queue_redraw()
 
@@ -211,6 +218,28 @@ func _update_knocked() -> void:
 			collision_mask = L.PLAYER_MASK
 	elif dodge_time <= 0.0:
 		last_safe = global_position
+
+func _footsteps(delta: float) -> void:
+	var floor_node := get_tree().get_first_node_in_group("floor")
+	floor_material = floor_node.material_at(global_position) if floor_node != null else "stone"
+	var moving := velocity.length() > 40.0 and not knocked
+	if not moving or crouching:
+		_step_timer = minf(_step_timer, STEP_INTERVAL * 0.5)
+		return
+	_step_timer -= delta
+	if _step_timer > 0.0:
+		return
+	_step_timer = STEP_INTERVAL
+	var radius: float = STEP_NOISE.get(floor_material, 40.0) * (1.5 if dodge_time > 0.0 else 1.0)
+	if radius <= 0.0:
+		return
+	if radius >= STEP_RING_MIN:
+		Fx.noise(self, global_position, radius)
+	else:
+		get_tree().call_group("enemy", "hear_noise", global_position, radius)
+
+func footstep_noise() -> float:
+	return 0.0 if crouching else STEP_NOISE.get(floor_material, 40.0)
 
 func _leave_scent(delta: float) -> void:
 	scent_clock += delta

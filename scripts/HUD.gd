@@ -84,8 +84,12 @@ func _draw_hud() -> void:
 	canvas.draw_circle(eye, 8.0, Color(0.15, 0.15, 0.15))
 	canvas.draw_circle(eye, 8.0 * (0.35 + 0.65 * lv), Color(1.0, 0.8, 0.45).lerp(Color(0.35, 0.4, 0.55), 1.0 - lv))
 	_text(Vector2(46, 133), label, 14, Color(1.0, 0.85, 0.55) if lv >= 0.6 else Color(0.7, 0.75, 0.9))
+	var fm: String = player.floor_material
+	var loud: float = player.footstep_noise()
+	var step_label := "silent" if loud <= 0.0 else ("quiet" if loud < 60.0 else ("LOUD" if loud >= 140.0 else "noisy"))
+	_text(Vector2(100, 133), "Floor: %s (%s)" % [fm, step_label], 14, Color(1.0, 0.6, 0.45) if loud >= 100.0 else Color(0.78, 0.76, 0.7))
 	if player.crouching:
-		_text(Vector2(100, 133), "CROUCHED: hidden behind low cover", 14, Color(0.75, 0.82, 1.0))
+		_text(Vector2(270, 133), "CROUCHED", 14, Color(0.75, 0.82, 1.0))
 
 	var k: Dictionary = main.kills
 	var lines := [
