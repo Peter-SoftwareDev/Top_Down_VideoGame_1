@@ -41,6 +41,28 @@ Prototype result: `assets/art/style_test/natural_vs_tiled.png` (top: tiles, bott
 11. **A different seed each run:** a room keeps its layout, but its stones, cracks and debris change between runs. The game feels familiar but never identical.
 12. **If we keep any tiles** (e.g. hand-drawn special floors): many low-contrast variants with Godot tile probabilities, corner/Wang transitions, and a macro tint over the top.
 
+## Round 2: transitions between areas
+
+**Problem found:** areas with different stone sizes met along a hard line. You could see exactly where "big slab" stone stopped and "cobble" stone began. (Compare `natural_v1_zones_960x540.png` with `natural_960x540.png`.)
+
+**Rule: never switch materials with a mask. Drive everything from continuous fields, and make changes happen one stone at a time.**
+
+What changed in the generator:
+1. **One stone-size field instead of three zones.** Big on worn routes, small in damp ground, ordinary elsewhere, varying smoothly. See `natural_stone_size.png` (white = big).
+2. **Variable-radius Poisson-disc scattering.** Stone centres are spaced according to that field, then *one* Voronoi diagram covers the whole floor, so stones grow and shrink gradually with no seam anywhere.
+3. **A skewed random size per stone.** Mostly ordinary stones, with some much bigger or smaller ones. This breaks the even honeycomb that perfect spacing creates, and lets a big stone sit among small ones like a real repaired floor.
+4. **Domed stones.** Each stone rises slightly towards its middle, so torchlight catches the centres. This reads as worn stone rather than cracked mud.
+5. **Per-stone material decisions.** Dampness is decided stone by stone (the moisture at the stone's centre against a random threshold), so the edge of a damp area is a scatter of damp and dry stones, not a gradient smeared across them.
+
+Before/after close-ups: `seams_before_after_x2.png` (zones vs. smooth field), `dome_before_after_x2.png`, `damp_per_stone_before_after_x2.png`. `natural_unlit_960x540.png` shows the floor without lighting, for judging the stone work.
+
+### Further ideas for transitions
+- **Give boundaries a reason.** Where floor types really must change (a corridor into a hall, dry into flooded), put something there that explains it: a threshold stone, a step, a drain channel, a line of grates, a kerb of dressed stone around the pit. Our eyes accept a visible edge if it's built.
+- **Probabilistic overlap zones** for surface layers too (moss, soot, straw): each stone or patch decides independently, so boundaries dissolve.
+- **Shared joints across materials.** If a room really mixes stone types (say flagstones and cobbles), generate them from one point set so the joint lines continue across the change.
+- **Macro colour has no edges.** Keep the slow colour drift continuous across every zone, so even where stone shapes change, the overall tone doesn't jump.
+- **Two-scale noise in the size field.** Large-scale for the room's story (routes, water), small-scale for patches of repair, so the change between sizes wobbles naturally.
+
 ## How this would work in Godot
 - **A room-art tool** (an in-editor button, built on `tools/pixelart/natural_room.py`) reads the room's walls, hazards, water and drawn wear paths, and bakes **albedo + normal-map textures** for the floor and walls.
 - **In the scene:** each room's floor is one Sprite2D with a CanvasTexture (albedo + normal map) under the existing gameplay geometry, so torchlight and shadows keep working.

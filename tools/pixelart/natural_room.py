@@ -79,57 +79,101 @@ moisture = np.clip(np.exp(-d_water / 110.0) * 1.1 + (fbm(160, 3, 2) - 0.55) * 0.
 wear = np.clip(np.exp(-(d_path / 46.0) ** 2) * (0.7 + 0.5 * fbm(60, 2, 3)), 0, 1)
 grime = np.clip(np.exp(-d_wall / 26.0) * 0.9 + np.exp(-d_pit / 18.0) * 0.6 + (fbm(90, 3, 4) - 0.5) * 0.5, 0, 1)
 
-# --- 1. Warped Voronoi flagstones, in three sizes chosen by zone ----------------------------
+# --- 1. Flagstones with a smoothly varying size --------------------------------------------
+# One stone-size field covers the whole room: big slabs on worn routes, small cobbles in damp
+# ground, ordinary flagstones elsewhere, with gradual change in between. Stone centres are
+# scattered by variable-radius Poisson-disc sampling (each candidate keeps its own spacing),
+# then one Voronoi diagram is built over all of them. No zones, so no seams.
 warp = 6.0
 wx = XX + (fbm(40, 3, 10) - 0.5) * 2 * warp
 wy = YY + (fbm(40, 3, 11) - 0.5) * 2 * warp
 
-def voronoi(cell, jitter, seed):
-    r = np.random.default_rng(seed)
-    ny, nx = int(H / cell) + 4, int(W / cell) + 4
-    jx = r.random((ny, nx)); jy = r.random((ny, nx))
-    # Stretch some cells sideways or up-down so slabs aren't all round.
-    stretch = 0.75 + r.random((ny, nx)) * 0.5
-    gx = np.floor(wx / cell).astype(int); gy = np.floor(wy / cell).astype(int)
-    F1 = np.full((H, W), 1e9); F2 = np.full((H, W), 1e9); ID = np.zeros((H, W), int)
-    for oy in (-2, -1, 0, 1, 2):
-        for ox in (-2, -1, 0, 1, 2):
-            cx = np.clip(gx + ox, -1, nx - 3); cy = np.clip(gy + oy, -1, ny - 3)
-            sx = (cx + 0.5 + (jx[cy + 1, cx + 1] - 0.5) * jitter) * cell
-            sy = (cy + 0.5 + (jy[cy + 1, cx + 1] - 0.5) * jitter) * cell
-            k = stretch[cy + 1, cx + 1]
-            d = np.hypot((wx - sx) * k, (wy - sy) / k)
-            sid = (cy + 1) * nx + (cx + 1) + seed * 100000
-            closer = d < F1
-            F2 = np.where(closer, F1, np.minimum(F2, d))
-            ID = np.where(closer, sid, ID)
-            F1 = np.where(closer, d, F1)
-    return (F2 - F1) * 0.5, ID
+R_MIN, R_MAX = 8.0, 40.0
+size_noise = fbm(120, 3, 20)
+stone_size = np.clip(23.0 + 16.0 * wear - 17.0 * moisture ** 0.8 + (size_noise - 0.5) * 12.0, R_MIN, R_MAX)
 
-edge_big, id_big = voronoi(36.0, 0.9, 1)      # big worn slabs
-edge_mid, id_mid = voronoi(23.0, 0.95, 2)     # ordinary flagstones
-edge_small, id_small = voronoi(12.0, 1.0, 3)  # rough small cobbles in damp ground
-zone_big = (wear > 0.35) | (fbm(170, 2, 20) > 0.66)
-zone_small = (~zone_big) & (moisture > 0.5)
-edge = np.where(zone_big, edge_big, np.where(zone_small, edge_small, edge_mid))
-ID = np.where(zone_big, id_big, np.where(zone_small, id_small, id_mid))
-# A joint wherever two zones meet, so slabs don't merge into cobbles.
-zone = zone_big.astype(int) * 2 + zone_small.astype(int)
-zp = np.pad(zone, 1, mode="edge")
-seam = (zp[1:-1, 2:] != zone) | (zp[2:, 1:-1] != zone)
-edge = np.where(seam, 0.0, edge)
+def scatter_stones(seed):
+    """Variable-radius dart throwing. Returns an (n, 2) array of stone centres."""
+    r = random.Random(seed)
+    B = R_MAX
+    nbx, nby = int(W / B) + 2, int(H / B) + 2
+    buckets = [[[] for _ in range(nbx)] for _ in range(nby)]
+    pts = []
+    for _ in range(90000):
+        x = r.uniform(-B * 0.5, W + B * 0.5); y = r.uniform(-B * 0.5, H + B * 0.5)
+        xi, yi = int(min(W - 1, max(0, x))), int(min(H - 1, max(0, y)))
+        # A little per-stone randomness: now and then a big stone among small ones.
+        # Skewed spread: mostly ordinary stones, some much bigger or smaller. Breaks the honeycomb.
+        rad = stone_size[yi, xi] * (0.6 + 0.9 * r.random() ** 1.6)
+        bx, by = int((x + B) / B), int((y + B) / B)
+        ok = True
+        for yy in range(max(0, by - 1), min(nby, by + 2)):
+            for xx in range(max(0, bx - 1), min(nbx, bx + 2)):
+                for (px, py, pr) in buckets[yy][xx]:
+                    need = (rad + pr) * 0.42
+                    if (x - px) ** 2 + (y - py) ** 2 < need * need:
+                        ok = False; break
+                if not ok: break
+            if not ok: break
+        if ok:
+            buckets[min(nby - 1, by)][min(nbx - 1, bx)].append((x, y, rad))
+            pts.append((x, y))
+    return np.array(pts)
+
+def voronoi_points(pts):
+    """F1/F2 distances and nearest-stone ID for every pixel, using a bucket grid."""
+    B = R_MAX
+    nbx, nby = int(W / B) + 4, int(H / B) + 4
+    bx = np.clip(((pts[:, 0] + 2 * B) / B).astype(int), 0, nbx - 1)
+    by = np.clip(((pts[:, 1] + 2 * B) / B).astype(int), 0, nby - 1)
+    counts = np.zeros((nby, nbx), int)
+    for i in range(len(pts)):
+        counts[by[i], bx[i]] += 1
+    K = counts.max()
+    table = -np.ones((nby, nbx, K), int); fill = np.zeros((nby, nbx), int)
+    for i in range(len(pts)):
+        table[by[i], bx[i], fill[by[i], bx[i]]] = i; fill[by[i], bx[i]] += 1
+    gx = np.clip(((wx + 2 * B) / B).astype(int), 1, nbx - 2)
+    gy = np.clip(((wy + 2 * B) / B).astype(int), 1, nby - 2)
+    F1 = np.full((H, W), 1e9); F2 = np.full((H, W), 1e9); ID = np.zeros((H, W), int)
+    for oy in (-1, 0, 1):
+        for ox in (-1, 0, 1):
+            for k in range(K):
+                idx = table[gy + oy, gx + ox, k]
+                valid = idx >= 0
+                sx = pts[np.maximum(idx, 0), 0]; sy = pts[np.maximum(idx, 0), 1]
+                d = np.where(valid, np.hypot(wx - sx, wy - sy), 1e9)
+                closer = d < F1
+                F2 = np.where(closer, F1, np.minimum(F2, d))
+                ID = np.where(closer, idx, ID)
+                F1 = np.where(closer, d, F1)
+    return (F2 - F1) * 0.5, ID, F1
+
+stones = scatter_stones(1)
+edge, ID, F1 = voronoi_points(stones)
+# How far from the stone's middle (0 = centre, 1 = edge): used to dome each stone.
+centre = np.clip(F1 / (F1 + edge + 1e-6), 0, 1)
+dome = (1 - centre) ** 1.3
 joint_w = 0.5 + fbm(30, 2, 12) * 0.7 + grime * 0.6 - wear * 0.45
 joint = edge < joint_w
 
 def per_stone(seed):
     return (np.sin(ID * 12.9898 + seed * 78.233) * 43758.5453) % 1.0
 tone = per_stone(5)          # per-stone colour
+# Decide dampness stone by stone: sample the moisture map at each stone's centre and compare
+# it with a random threshold per stone. The edge of a damp area becomes a scatter of
+# individual damp and dry stones, as on a real floor, instead of a gradient across stones.
+sx_i = np.clip(stones[:, 0].astype(int), 0, W - 1); sy_i = np.clip(stones[:, 1].astype(int), 0, H - 1)
+moist_at_stone = moisture[sy_i, sx_i][ID]
+damp_stone = (moist_at_stone > per_stone(8) * 0.8 + 0.1).astype(float)
+moisture_px = moisture
+moisture = np.clip(moisture_px * 0.35 + damp_stone * moist_at_stone * 0.9, 0, 1)
 tilt = per_stone(6)          # per-stone height
-missing = (per_stone(7) < 0.02) & ~zone_big
+missing = (per_stone(7) < 0.02) & (stone_size < 30)
 
 # --- 2. Height (for lighting) and albedo --------------------------------------------------
 bevel = np.clip(edge / 3.0, 0, 1)
-height = np.where(joint, 0.15, 0.35 + bevel * 0.3 + tilt * 0.15 - wear * 0.1)
+height = np.where(joint, 0.12, 0.3 + bevel * 0.2 + dome * (0.35 - wear * 0.2) + tilt * 0.12)
 height = np.where(missing, 0.0 + fbm(6, 1, 13) * 0.15, height)
 
 def col(name):
@@ -138,12 +182,12 @@ def col(name):
 stone_dark, stone_mid, stone_light = col("stone2"), col("stone3"), col("stone4")
 polished = col("stone5")
 mortar_c = col("stone1") * 0.7 + col("stone0") * 0.3
-damp_c, moss_c = col("water1"), col("rift1")
+damp_c, moss_c = col("water1"), col("rift0") * 0.7 + col("stone1") * 0.3
 dirt_c = col("stone1") * 0.6 + col("wood0") * 0.4
 
 t = np.clip(tone * 0.35 + macro * 0.5 + bevel * 0.1, 0, 1)[..., None]
 alb = stone_dark * (1 - t) + stone_mid * t
-alb = alb + (stone_light - alb) * (bevel * (1 - grime) * 0.18)[..., None]
+alb = alb + (stone_light - alb) * ((bevel * 0.1 + dome * 0.15) * (1 - grime))[..., None]
 alb = alb + (polished - alb) * (wear * 0.45 * bevel)[..., None]               # worn route
 alb = alb * (1 - moisture * 0.25)[..., None] + damp_c * (moisture * 0.25)[..., None]  # damp
 alb = alb * (1 - grime * 0.35)[..., None]                                     # grime / AO
@@ -169,7 +213,7 @@ height = np.where(crack, 0.1, height)
 
 # Puddles in damp low spots.
 puddle = (moisture > 0.72) & (fbm(25, 2, 16) > 0.58) & (YY < WATER_Y - 4)
-alb = np.where(puddle[..., None], col("water2") * 0.8 + col("water3") * 0.2, alb)
+alb = np.where(puddle[..., None], col("water1") * 0.6 + col("stone1") * 0.25 + col("water3") * 0.15, alb)
 height = np.where(puddle, 0.2, height)
 
 # --- 3. Irregular masonry wall -------------------------------------------------------------
@@ -269,6 +313,7 @@ alb_q = pal[np.argmin(d2, axis=-1)]
 
 # --- 7. Props, characters and lighting --------------------------------------------------------
 albedo = Image.fromarray((alb_q * 255).astype(np.uint8), "RGB").convert("RGBA")
+albedo.convert("RGB").save(os.path.join(OUT, "natural_unlit_960x540.png"))   # the floor without lighting
 hp = np.pad(height, 1, mode="edge")
 dx = (hp[1:-1, 2:] - hp[1:-1, :-2]) * 2.2
 dy = (hp[2:, 1:-1] - hp[:-2, 1:-1]) * 2.2
@@ -332,6 +377,7 @@ both = Image.new("RGB", (W, H * 2 + 6), (0, 0, 0))
 both.paste(old, (0, 0)); both.paste(img, (0, H + 6))
 both.save(os.path.join(OUT, "natural_vs_tiled.png"))
 
+Image.fromarray(((stone_size - R_MIN) / (R_MAX - R_MIN) * 255).astype(np.uint8), "L").save(os.path.join(OUT, "natural_stone_size.png"))
 # Debug view of the layout maps (R = wear, G = moisture, B = grime).
 maps = np.stack([wear, moisture, grime], -1)
 Image.fromarray((maps * 255).astype(np.uint8), "RGB").save(os.path.join(OUT, "natural_maps.png"))
