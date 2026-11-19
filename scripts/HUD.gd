@@ -42,21 +42,26 @@ func _draw_hud() -> void:
 	var vp := canvas.size
 	var light := Color(0.95, 0.92, 0.85)
 
-	canvas.draw_rect(Rect2(12, 12, 300, 96), Color(0, 0, 0, 0.5))
+	canvas.draw_rect(Rect2(12, 12, 412, 96), Color(0, 0, 0, 0.5))
 	for i in player.max_health:
 		var hc := Color(0.85, 0.2, 0.2) if i < player.health else Color(0.25, 0.2, 0.2)
 		canvas.draw_rect(Rect2(24 + i * 22, 24, 18, 18), hc)
 	_text(Vector2(24, 62), player.loadout_name(), 16, light)
 	_bar(Vector2(24, 72), "LMB  " + player.primary_name(), player.primary_ready())
-	_bar(Vector2(164, 72), "RMB  " + player.secondary_name(), player.secondary_ready())
+	_bar(Vector2(160, 72), "RMB  " + player.secondary_name(), player.secondary_ready())
+	_bar(Vector2(296, 72), "Dodge", player.dodge_ready())
+	# Charge pips for the kick / rock.
+	for i in player.secondary_max_charges:
+		var cc := Color(0.9, 0.85, 0.6) if i < player.charges else Color(0.3, 0.3, 0.28)
+		canvas.draw_rect(Rect2(250 - i * 10, 76, 7, 7), cc)
 
 	var k: Dictionary = main.kills
 	var lines := [
 		"Guards left: %d / %d" % [main.enemies_left, main.enemies_total],
 		"Bolt %d   Blade %d   Sneak %d" % [k.bolt, k.blade, k.sneak],
-		"Pit %d   Water %d" % [k.pit, k.water],
+		"Pit %d   Water %d   Crate %d" % [k.pit, k.water, k.crate],
 	]
-	var box_w := 230.0
+	var box_w := 250.0
 	canvas.draw_rect(Rect2(vp.x - box_w - 12, 12, box_w, 74), Color(0, 0, 0, 0.5))
 	for i in lines.size():
 		_text(Vector2(vp.x - box_w, 34 + i * 20), lines[i], 14, light)

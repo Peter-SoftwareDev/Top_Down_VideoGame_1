@@ -1,6 +1,7 @@
 extends Area2D
-## Thrown stun rock: non-lethal. Knocks a guard back and stuns it.
-## Wherever it lands it makes a noise that draws unaware guards to investigate.
+## Thrown stun rock: non-lethal. Knocks a guard (or a crate) back and stuns it.
+## Wherever it lands it makes a noise that draws unaware guards to investigate,
+## and it can be picked up again (unless it fell into a pit or water).
 
 const L = preload("res://scripts/Layers.gd")
 const Fx = preload("res://scripts/Fx.gd")
@@ -28,7 +29,7 @@ func setup(from: Vector2, to: Vector2) -> void:
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = L.WORLD | L.ENEMY
+	collision_mask = L.PROJECTILE_MASK
 	var cs := CollisionShape2D.new()
 	var c := CircleShape2D.new()
 	c.radius = 5.0
@@ -45,23 +46,26 @@ func _physics_process(delta: float) -> void:
 	position = start.lerp(target, k)
 	queue_redraw()
 	if k >= 1.0:
-		_land(NOISE_RADIUS)
+		_land(NOISE_RADIUS, global_position)
 
 func _on_body_entered(body: Node) -> void:
 	if done:
 		return
-	if body.is_in_group("enemy"):
+	if body.has_method("apply_knockback"):
 		if body.is_dying():
 			return
 		body.apply_knockback(dir * KNOCK, STUN)
-		Fx.popup(body, body.global_position + Vector2(0, -28), "STUNNED", Color(0.7, 0.75, 1.0))
-		_land(HIT_NOISE_RADIUS)
+		if body.is_in_group("enemy"):
+			Fx.popup(body, body.global_position + Vector2(0, -28), "STUNNED", Color(0.7, 0.75, 1.0))
+			Fx.hitstop(self, 0.06, 0.05)
+		_land(HIT_NOISE_RADIUS, global_position - dir * 20.0)
 	else:
-		_land(NOISE_RADIUS)
+		_land(NOISE_RADIUS, global_position - dir * 18.0)
 
-func _land(radius: float) -> void:
+func _land(radius: float, rest_at: Vector2) -> void:
 	done = true
 	Fx.noise(self, global_position, radius)
+	Fx.drop(self, rest_at, "rock")
 	queue_free()
 
 func _draw() -> void:

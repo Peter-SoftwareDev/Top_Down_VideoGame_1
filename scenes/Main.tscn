@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="6_player"]
 [ext_resource type="PackedScene" path="res://scenes/Enemy.tscn" id="7_enemy"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="8_hud"]
+[ext_resource type="Script" path="res://scripts/Crate.gd" id="9_crate"]
+[ext_resource type="Script" path="res://scripts/Pickup.gd" id="10_pickup"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -23,6 +25,7 @@ size = Vector2(1400, 900)
 position = Vector2(700, 320)
 script = ExtResource("4_hazard")
 size = Vector2(300, 150)
+crumbles = true
 
 [node name="CellPit" type="Node2D" parent="Hazards"]
 position = Vector2(330, 700)
@@ -93,6 +96,52 @@ script = ExtResource("5_torch")
 [node name="TorchS" type="Node2D" parent="Torches"]
 position = Vector2(700, 886)
 script = ExtResource("5_torch")
+
+[node name="Props" type="Node2D" parent="."]
+
+[node name="CrateChasm" type="CharacterBody2D" parent="Props"]
+position = Vector2(470, 190)
+script = ExtResource("9_crate")
+
+[node name="CrateStart" type="CharacterBody2D" parent="Props"]
+position = Vector2(250, 420)
+script = ExtResource("9_crate")
+contents = "rock"
+contents_amount = 2
+
+[node name="CratePool" type="CharacterBody2D" parent="Props"]
+position = Vector2(880, 430)
+script = ExtResource("9_crate")
+contents = "bolt"
+contents_amount = 3
+
+[node name="CrateSentry" type="CharacterBody2D" parent="Props"]
+position = Vector2(1300, 330)
+script = ExtResource("9_crate")
+
+[node name="CrateSouth" type="CharacterBody2D" parent="Props"]
+position = Vector2(600, 820)
+script = ExtResource("9_crate")
+contents = "bolt"
+contents_amount = 2
+
+[node name="CrateCorner" type="CharacterBody2D" parent="Props"]
+position = Vector2(1340, 860)
+script = ExtResource("9_crate")
+contents = "rock"
+contents_amount = 2
+
+[node name="BoltsNearStart" type="Area2D" parent="Props"]
+position = Vector2(200, 300)
+script = ExtResource("10_pickup")
+kind = "bolt"
+amount = 2
+
+[node name="RocksMiddle" type="Area2D" parent="Props"]
+position = Vector2(780, 610)
+script = ExtResource("10_pickup")
+kind = "rock"
+amount = 2
 
 [node name="Enemies" type="Node2D" parent="."]
 

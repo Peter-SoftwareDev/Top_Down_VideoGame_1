@@ -227,6 +227,31 @@ Prioritize testing whether physics combat and the floor loop are fun.
   - **Crossbow + Shove:** lethal at range, physics push up close.
   - **Blade + Stun Rock:** lethal up close, physics hit at range (stun, knockback and noise).
 - **First milestone:** M0 combat sandbox (built; see README).
+- **Non-lethal tools use charges.** The kick and the stun rock start with 1 charge that refills on a cooldown. More charges are an upgrade (a floor reward or a legacy unlock), not something combined across loadouts.
+- **Ammo is limited and retrievable.** Bolts and rocks land on the floor and can be picked up again. Anything that falls into a pit or water is lost, and some bolts snap on stone. Crates can hold spare ammo.
+- **The player can fall.** Only when thrown by a hit (never by walking), and it costs health (pit 2, water 1) rather than killing outright. You're placed back on the last safe ground.
+- **Guards:** a suspicion meter fills before an alert. An alerted guard shouts, bringing nearby guards running; silencing it mid-shout prevents the alarm. After an alert, guards stay wary. Wind-ups are sometimes held longer as a feint.
+- **Environment:** crumbling pit rims, and breakable crates that crush guards, block sight, and make noise when broken.
+- **Feel:** a short hit stop on heavy hits, and brief slow motion on hazard kills.
+
+## Enemy Ideas (menu to prototype from)
+
+Each idea has a different relationship with the physics, so each one tests something new. Names are working titles.
+
+| Enemy | What it does | Physics hook | How you beat it | Fits |
+|---|---|---|---|---|
+| **Gaoler** (brute) | Big, slow, hits hard. Shoulder-charges in a straight line. | Too heavy to kick until staggered. A wall slam, a chain hit or a crate crush staggers it. Its charge can throw *you* into a pit. | Sidestep the charge so it slams into a wall, then kick it while it's dazed. | Prison |
+| **Scent-hound** | Fast, fragile, hunts in pairs. Follows your recent trail instead of using sight. | Very light: kicks and rocks send it twice as far. | Break its trail across water. Kill it fast or get it into a hazard. | Prison, Cistern |
+| **Bell-warden** | Doesn't fight. When it notices you, it runs to an alarm bell. | Can be knocked off its route or into a hazard on the way. | A priority target. If it rings the bell, every guard on the floor is wary. | Prison |
+| **Shieldbearer** | A frontal shield blocks bolts and slashes. | Kicking the shield pushes *you* back. Hits from behind or the side work normally. | Flank it, or lure it with a rock so it turns its back. | Cistern |
+| **Pit-lurker** | Hides in pits or deep water and grabs anyone on the rim. | Makes the rim dangerous for both sides. It drags guards in too. | Stay off the rim, or bait guards past it. | Cistern |
+| **Crawler swarm** | Packs of tiny, weak creatures. | Chain reactions galore: one kick scatters the pack. Crates crush several at once. | Area control: crates, chokepoints, hazards. | Cistern, Foundry |
+| **Hook-jailer** | Throws a chain hook that *pulls you* towards it. | The reverse of your kick: it can drag you over a pit. A wall or a crate in between blocks the hook. | Keep cover between you, or dodge the telegraphed throw. | Prison, Foundry |
+| **Foundry automaton** | Leftover imperial machinery. Slow, armoured, ignores stuns. | Immune to weapons. Only hazards or machinery destroy it. A walking environment puzzle. | Lure it into a pit, crusher or furnace. | Foundry |
+| **Lantern-bearer** | Carries the only light in a dark area and reveals you within it. | A kicked lantern breaks and darkens the area (and could start fires later). | Put the light out, then sneak. | Cistern, Foundry |
+| **Crossbow sentry** | Ranged. Keeps its distance, with a visible aiming line. | Its bolts can hit other guards. | Use cover. Close the distance, or make it shoot its friends. | Foundry |
+
+**Suggested first pair to prototype: Gaoler and Scent-hound.** They sit at opposite ends of the physics (too heavy to kick vs. flies across the room), so together they show whether kicking has depth.
 
 ## Proposed Answers (draft, not yet decided)
 

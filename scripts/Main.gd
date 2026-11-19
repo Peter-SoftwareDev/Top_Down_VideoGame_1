@@ -6,11 +6,15 @@ const Fx = preload("res://scripts/Fx.gd")
 @onready var player = $Player
 @onready var hud = $HUD
 
-var kills := {"bolt": 0, "blade": 0, "sneak": 0, "pit": 0, "water": 0}
+var kills := {"bolt": 0, "blade": 0, "sneak": 0, "pit": 0, "water": 0, "crate": 0}
 var enemies_total := 0
 var enemies_left := 0
+var _slow_until_ms := 0
+var _slow_scale := 1.0
 
 func _ready() -> void:
+	add_to_group("game")
+	Engine.time_scale = 1.0
 	# Gloom: darken everything, then light the player and the torches.
 	var dark := CanvasModulate.new()
 	dark.color = Color(0.5, 0.5, 0.6)
@@ -37,8 +41,25 @@ func _ready() -> void:
 	hud.setup(self, player)
 
 func _process(_delta: float) -> void:
+	if _slow_until_ms > 0 and Time.get_ticks_msec() >= _slow_until_ms:
+		_slow_until_ms = 0
+		_slow_scale = 1.0
+		Engine.time_scale = 1.0
 	if Input.is_action_just_pressed("restart"):
+		Engine.time_scale = 1.0
 		get_tree().reload_current_scene()
+
+## Slow time for `duration` real seconds. Overlapping calls keep the strongest slowdown.
+func hitstop(duration: float, time_scale: float) -> void:
+	var now := Time.get_ticks_msec()
+	var until := now + int(duration * 1000.0)
+	if _slow_until_ms > now:
+		_slow_scale = minf(_slow_scale, time_scale)
+		_slow_until_ms = maxi(_slow_until_ms, until)
+	else:
+		_slow_scale = time_scale
+		_slow_until_ms = until
+	Engine.time_scale = _slow_scale
 
 func _on_enemy_died(_enemy: Node, cause: String) -> void:
 	kills[cause] = kills.get(cause, 0) + 1
