@@ -30,6 +30,14 @@ enum Kind { PIT, DEEP_WATER }
 		queue_redraw()
 ## How many times the rim can crumble before it's solid rock.
 @export var max_crumbles: int = 4
+## Pits only: a broken, ragged edge instead of a neat rectangle. The collision follows the
+## same outline as the art, so you fall exactly where it looks like you should.
+@export var ragged: bool = true:
+	set(value):
+		ragged = value
+		queue_redraw()
+## How far (px) the broken edge can bite into the floor around the pit.
+@export var ragged_depth: float = 10.0
 
 const CRUMBLE_REACH := 10.0   # A stop this close outside the rim still crumbles it.
 const CRUMBLE_STEP := 26.0    # How much the pit grows per crumble.
@@ -42,12 +50,19 @@ var _rim_shape: RectangleShape2D
 var _rim_cs: CollisionShape2D
 var _zone_shape: RectangleShape2D
 var _zone_cs: CollisionShape2D
+var _rim_poly: CollisionPolygon2D
+var _zone_poly: CollisionPolygon2D
+var outline := PackedVector2Array()
+var _noise: FastNoiseLite
 
 func _ready() -> void:
 	area = Rect2(-size * 0.5, size)
 	if Engine.is_editor_hint():
 		return
 	add_to_group("hazard")
+	if _is_ragged():
+		_build_ragged()
+		return
 	var rim := StaticBody2D.new()
 	rim.collision_layer = L.HAZARD_EDGE
 	rim.collision_mask = 0
@@ -72,6 +87,60 @@ func _apply_shapes() -> void:
 	_rim_cs.position = area.get_center()
 	_zone_shape.size = area.size - Vector2.ONE * edge_margin * 2.0
 	_zone_cs.position = area.get_center()
+
+func _is_ragged() -> bool:
+	return ragged and kind == Kind.PIT
+
+func _make_noise() -> void:
+	if _noise == null:
+		_noise = FastNoiseLite.new()
+		_noise.seed = int(global_position.x * 7.0 + global_position.y * 13.0)
+		_noise.frequency = 0.045
+		_noise.fractal_octaves = 3
+
+## The pit's outline: walk around the rectangle and push each point outwards by noise,
+## as if stones have broken away from the rim.
+func _make_outline(r: Rect2) -> PackedVector2Array:
+	_make_noise()
+	var pts := PackedVector2Array()
+	var step := 5.0
+	var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
+	var normals := [Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT]
+	for side in 4:
+		var a: Vector2 = corners[side]
+		var b: Vector2 = corners[(side + 1) % 4]
+		var n: Vector2 = normals[side]
+		var length := a.distance_to(b)
+		var count := maxi(2, int(length / step))
+		for i in count:
+			var p := a.lerp(b, float(i) / count)
+			var world := global_position + p
+			var bite := (_noise.get_noise_2d(world.x, world.y) * 0.5 + 0.5) * ragged_depth
+			pts.append(p + n * bite)
+	return pts
+
+func _build_ragged() -> void:
+	var rim := StaticBody2D.new()
+	rim.collision_layer = L.HAZARD_EDGE
+	rim.collision_mask = 0
+	_rim_poly = CollisionPolygon2D.new()
+	rim.add_child(_rim_poly)
+	add_child(rim)
+	var zone := Area2D.new()
+	zone.collision_layer = L.HAZARD_ZONE
+	zone.collision_mask = 0
+	zone.monitoring = false
+	_zone_poly = CollisionPolygon2D.new()
+	zone.add_child(_zone_poly)
+	add_child(zone)
+	_apply_ragged()
+
+func _apply_ragged() -> void:
+	outline = _make_outline(area)
+	_rim_poly.polygon = outline
+	var inset := Geometry2D.offset_polygon(outline, -edge_margin)
+	_zone_poly.polygon = inset[0] if inset.size() > 0 else outline
+	queue_redraw()
 
 func kill_cause() -> String:
 	return "pit" if kind == Kind.PIT else "water"
@@ -103,7 +172,10 @@ func try_crumble(pos: Vector2, radius: float) -> bool:
 	rubble.append(strip)
 	# Physics stays a simple box: grow the whole side. The rubble strip is what you see.
 	area = area.merge(strip)
-	_apply_shapes.call_deferred()
+	if _is_ragged():
+		_apply_ragged.call_deferred()
+	else:
+		_apply_shapes.call_deferred()
 	Fx.popup(self, pos + Vector2(0, -26), "CRUMBLE", Color(0.85, 0.75, 0.6))
 	Fx.ring(self, pos, 30.0, Color(0.7, 0.6, 0.5, 0.9))
 	Fx.noise(self, pos, 200.0)
@@ -118,6 +190,9 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var r := area
+	if _is_ragged():
+		_draw_ragged_pit()
+		return
 	if kind == Kind.PIT:
 		draw_rect(r, Color(0.01, 0.01, 0.015))
 		for i in 4:
@@ -147,6 +222,39 @@ func _draw() -> void:
 				draw_polyline(pts, Color(0.35, 0.55, 0.75, 0.25), 1.5)
 		draw_rect(r, Color(0.5, 0.6, 0.65), false, 4.0)
 		draw_rect(r.grow(5.0), Color(0.5, 0.6, 0.65, 0.25), false, 2.0)
+
+## A collapsed floor: darkness with depth bands, a broken lip, and loose rubble.
+func _draw_ragged_pit() -> void:
+	var poly := outline
+	if poly.size() < 3:
+		poly = _make_outline(area)   # In the editor, before _ready has built it.
+	draw_colored_polygon(poly, Color(0.01, 0.01, 0.015))
+	for i in 4:
+		var bands := Geometry2D.offset_polygon(poly, -(5.0 + i * 7.0))
+		for band in bands:
+			var closed := band.duplicate()
+			closed.append(band[0])
+			draw_polyline(closed, Color(0.16, 0.13, 0.12, 0.3 - i * 0.06), 3.0)
+	var lip := poly.duplicate()
+	lip.append(poly[0])
+	draw_polyline(lip, Color(0.5, 0.44, 0.37), 3.0)
+	var outer := Geometry2D.offset_polygon(poly, 3.0)
+	for ring in outer:
+		var c := ring.duplicate()
+		c.append(ring[0])
+		draw_polyline(c, Color(0.62, 0.55, 0.45, 0.3), 1.5)
+	# Rubble along the rim, and cracks if it's a crumbling one.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(position.x * 3.0 + position.y * 5.0)
+	for i in range(0, poly.size(), 3):
+		if rng.randf() < 0.45:
+			var p := poly[i] + (poly[i] - area.get_center()).normalized() * rng.randf_range(3.0, 9.0)
+			draw_circle(p, rng.randf_range(1.2, 2.6), Color(0.33, 0.29, 0.27))
+	if crumbles:
+		for i in range(0, poly.size(), 6):
+			var p := poly[i]
+			var out := (p - area.get_center()).normalized()
+			draw_polyline(PackedVector2Array([p + out * 2.0, p + out * 7.0 + out.orthogonal() * 3.0, p + out * 11.0]), Color(0.25, 0.2, 0.17), 1.5)
 
 ## Jagged marks along the rim so a crumbling pit looks different from solid stone.
 func _draw_cracks(r: Rect2) -> void:

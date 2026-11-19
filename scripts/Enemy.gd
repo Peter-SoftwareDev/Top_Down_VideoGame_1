@@ -12,6 +12,8 @@ extends CharacterBody2D
 
 const L = preload("res://scripts/Layers.gd")
 const Fx = preload("res://scripts/Fx.gd")
+const CharacterSprite = preload("res://scripts/CharacterSprite.gd")
+const GUARD_GEAR := {"back": 2, "head": 2, "torso": 2, "hands": 2, "feet": 3}
 
 signal died(enemy: Node, cause: String)
 
@@ -124,6 +126,8 @@ var hit_flash := 0.0
 var cone_points := PackedVector2Array()
 var player: Node2D
 var feet: Area2D
+var sprite: Node2D
+var overlay: Node2D
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -149,6 +153,33 @@ func _ready() -> void:
 	cs.shape = c
 	feet.add_child(cs)
 	add_child(feet)
+	sprite = _make_sprite()
+	if sprite != null:
+		add_child(sprite)
+	overlay = Node2D.new()
+	add_child(overlay)
+	overlay.draw.connect(_draw_overlay)
+
+## The character's look. Enemy types override this.
+func _make_sprite() -> Node2D:
+	var s := CharacterSprite.new()
+	s.body = "guard"
+	s.gear = GUARD_GEAR.duplicate()
+	return s
+
+func _update_sprite(delta: float) -> void:
+	if sprite == null:
+		return
+	var acting := state == State.WINDUP or state == State.LUNGE or state == State.CHARGE
+	sprite.animate(facing, velocity.length() > 10.0, state == State.STUNNED, acting, delta)
+	var tint := Color.WHITE
+	if state == State.WINDUP:
+		tint = Color.WHITE.lerp(Color(1.0, 0.55, 0.25), clampf(state_time / windup_duration, 0.0, 1.0))
+	elif state == State.STUNNED:
+		tint = Color(0.65, 0.7, 1.0)
+	if hit_flash > 0.0:
+		tint = Color(2.0, 2.0, 2.0)
+	sprite.set_tint(tint)
 
 # --- Public API used by weapons, props and noise ---------------------------------
 
@@ -267,7 +298,9 @@ func _physics_process(delta: float) -> void:
 		_track_stuck(wanted, delta)
 		_check_hazards()
 	_update_cone()
+	_update_sprite(delta)
 	queue_redraw()
+	overlay.queue_redraw()
 
 func _set_state(s: State) -> void:
 	state = s
@@ -647,6 +680,10 @@ func _update_cone() -> void:
 			end = hit.position
 		cone_points.append(end - global_position)
 
+## How tall the sprite is above the feet (for placing icons above the head).
+func _sprite_height() -> float:
+	return 30.0 if sprite != null else radius + 4.0
+
 func _base_color() -> Color:
 	return Color(0.72, 0.24, 0.2)
 
@@ -671,43 +708,54 @@ func _draw() -> void:
 		for i in cone_points.size() - 1:
 			draw_primitive(PackedVector2Array([Vector2.ZERO, cone_points[i], cone_points[i + 1]]), cols, PackedVector2Array())
 
-	var body := _base_color()
-	var windup_k := clampf(state_time / windup_duration, 0.0, 1.0)
-	if state == State.STUNNED:
-		body = Color(0.45, 0.45, 0.75)
-	elif state == State.WINDUP:
-		body = body.lerp(Color(1.0, 0.65, 0.2), windup_k)
-	if hit_flash > 0.0:
-		body = Color.WHITE
-	draw_circle(Vector2.ZERO, radius + 2.0, Color(0, 0, 0, 0.35))
-	if wary and state != State.DYING:
-		draw_arc(Vector2.ZERO, radius + 2.5, 0.0, TAU, 24, Color(1.0, 0.75, 0.3, 0.6), 1.5)
-	_draw_body(body)
+	if sprite != null:
+		# Contact shadow, and the "wary" ring on the floor around the feet.
+		draw_set_transform(Vector2(0, 2), 0.0, Vector2(1.0, 0.45))
+		draw_circle(Vector2.ZERO, radius + 1.0, Color(0, 0, 0, 0.35))
+		if wary and state != State.DYING:
+			draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(1.0, 0.75, 0.3, 0.6), 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	else:
+		var body := _base_color()
+		if state == State.STUNNED:
+			body = Color(0.45, 0.45, 0.75)
+		elif state == State.WINDUP:
+			body = body.lerp(Color(1.0, 0.65, 0.2), clampf(state_time / windup_duration, 0.0, 1.0))
+		if hit_flash > 0.0:
+			body = Color.WHITE
+		draw_circle(Vector2.ZERO, radius + 2.0, Color(0, 0, 0, 0.35))
+		_draw_body(body)
 	_draw_extra()
 
+## Drawn above the sprite: telegraphs, stun stars, health, suspicion and alert icons.
+func _draw_overlay() -> void:
+	var o := overlay
+	var top := -_sprite_height()
+	var windup_k := clampf(state_time / windup_duration, 0.0, 1.0)
+
 	if state == State.WINDUP:
-		draw_arc(Vector2.ZERO, radius + 4.0 + 16.0 * (1.0 - windup_k), 0.0, TAU, 24, Color(1.0, 0.6, 0.2, 0.9), 2.0)
+		o.draw_arc(Vector2.ZERO, radius + 4.0 + 16.0 * (1.0 - windup_k), 0.0, TAU, 24, Color(1.0, 0.6, 0.2, 0.9), 2.0)
 	if state == State.SHOUT:
 		var sk := clampf(state_time / SHOUT_TIME, 0.0, 1.0)
 		for i in 2:
-			draw_arc(Vector2.ZERO, radius + 6.0 + i * 7.0 + sk * 6.0, -PI * 0.9, -PI * 0.1, 10, Color(1.0, 0.3, 0.25, 0.8 - i * 0.3), 2.0)
+			o.draw_arc(Vector2.ZERO, radius + 6.0 + i * 7.0 + sk * 6.0, -PI * 0.9, -PI * 0.1, 10, Color(1.0, 0.3, 0.25, 0.8 - i * 0.3), 2.0)
 	if state == State.STUNNED:
 		for k in 3:
 			var a := state_time * 4.0 + k * TAU / 3.0
-			draw_circle(Vector2(cos(a) * 12.0, -radius - 8.0 + sin(a) * 4.0), 2.5, Color(1.0, 1.0, 0.6))
+			o.draw_circle(Vector2(cos(a) * 12.0, top - 4.0 + sin(a) * 4.0), 2.5, Color(1.0, 1.0, 0.6))
 
 	if state != State.DYING and health < max_health:
 		for i in max_health:
 			var pc := Color(0.9, 0.3, 0.25) if i < health else Color(0.2, 0.2, 0.2)
-			draw_rect(Rect2(-12.0 + i * 9.0, radius + 5.0, 7.0, 3.0), pc)
+			o.draw_rect(Rect2(-12.0 + i * 9.0, 4.0, 7.0, 3.0), pc)
 
 	# Suspicion meter above the head while it's building.
 	if (state == State.PATROL or state == State.INVESTIGATE) and suspicion > 0.02:
-		draw_rect(Rect2(-12, -radius - 12, 24, 4), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(-12, -radius - 12, 24 * suspicion, 4), Color(1.0, 0.85, 0.3).lerp(Color(1.0, 0.3, 0.2), suspicion))
+		o.draw_rect(Rect2(-12, top - 10, 24, 4), Color(0, 0, 0, 0.6))
+		o.draw_rect(Rect2(-12, top - 10, 24 * suspicion, 4), Color(1.0, 0.85, 0.3).lerp(Color(1.0, 0.3, 0.2), suspicion))
 
 	var font := ThemeDB.fallback_font
 	if state == State.ALERT or state == State.WINDUP or state == State.LUNGE or state == State.RECOVER or state == State.SHOUT or state == State.CHARGE:
-		draw_string(font, Vector2(-3, -radius - 6), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.35, 0.3))
+		o.draw_string(font, Vector2(-3, top - 2), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.35, 0.3))
 	elif state == State.INVESTIGATE and suspicion <= 0.02:
-		draw_string(font, Vector2(-4, -radius - 6), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.85, 0.3))
+		o.draw_string(font, Vector2(-4, top - 2), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1.0, 0.85, 0.3))

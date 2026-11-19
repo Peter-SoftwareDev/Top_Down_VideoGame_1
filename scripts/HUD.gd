@@ -106,7 +106,7 @@ func _draw_hud() -> void:
 
 	var help := [
 		"WASD move  |  Mouse aim  |  LMB primary  |  RMB secondary",
-		"C / Ctrl crouch  |  Space dodge  |  R reset room  |  Esc change weapon",
+		"C / Ctrl crouch  |  Space dodge  |  R reset room  |  Esc change weapon  |  G try gear",
 	]
 	for i in help.size():
 		_text(Vector2(16, vp.y - 34 + i * 18), help[i], 13, Color(0.8, 0.78, 0.72, 0.8))

@@ -41,6 +41,16 @@ func _ready() -> void:
 	knock_scale = 0.0
 	super._ready()
 
+func _make_sprite() -> Node2D:
+	var s := CharacterSprite.new()
+	s.sheet_path = "res://assets/art/chars/gaoler.png"
+	s.frame_size = Vector2i(32, 40)
+	s.lift = 13.0
+	return s
+
+func _sprite_height() -> float:
+	return 40.0
+
 func _physics_process(delta: float) -> void:
 	charge_cd = maxf(charge_cd - delta, 0.0)
 	_heavy_popup_cd = maxf(_heavy_popup_cd - delta, 0.0)

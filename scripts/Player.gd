@@ -9,6 +9,15 @@ const L = preload("res://scripts/Layers.gd")
 const Fx = preload("res://scripts/Fx.gd")
 const Bolt = preload("res://scripts/Bolt.gd")
 const Rock = preload("res://scripts/Rock.gd")
+const CharacterSprite = preload("res://scripts/CharacterSprite.gd")
+
+## Gear presets for testing (G cycles them). In the full game gear is found and earned.
+const GEAR_PRESETS := [
+	{"name": "Prisoner", "gear": {"hands": 0}},
+	{"name": "Scavenger", "gear": {"back": 1, "head": 1, "torso": 1, "hands": 1, "feet": 1}},
+	{"name": "Turncoat", "gear": {"back": 2, "head": 2, "torso": 2, "hands": 2, "feet": 2}},
+	{"name": "Relic-bearer", "gear": {"back": 3, "head": 3, "torso": 3, "hands": 3, "feet": 3}},
+]
 
 signal health_changed(current: int, maximum: int)
 signal died
@@ -88,6 +97,9 @@ var swing_kind := ""
 var swing_dir := Vector2.RIGHT
 var shake := 0.0
 var feet: Area2D
+var sprite: Node2D
+var overlay: Node2D
+var gear_preset := 0
 ## Scent trail for hounds: recent positions, each with the game time it was left.
 var scent: Array[Dictionary] = []
 var scent_clock := 0.0
@@ -112,6 +124,13 @@ func _ready() -> void:
 	health = max_health
 	charges = secondary_max_charges
 	last_safe = global_position
+	sprite = CharacterSprite.new()
+	sprite.gear = GEAR_PRESETS[0].gear.duplicate()
+	add_child(sprite)
+	# Weapon, swing arcs and aim guides draw on top of the sprite.
+	overlay = Node2D.new()
+	add_child(overlay)
+	overlay.draw.connect(_draw_overlay)
 	feet = Area2D.new()
 	feet.collision_layer = 0
 	feet.collision_mask = L.HAZARD_ZONE
@@ -186,6 +205,8 @@ func _physics_process(delta: float) -> void:
 			dodge_dir = input if input != Vector2.ZERO else aim
 			dodge_time = DODGE_TIME
 			dodge_cd = DODGE_COOLDOWN + DODGE_TIME
+		if Input.is_action_just_pressed("gear_preset"):
+			cycle_gear()
 		if allow_loadout_swap and Input.is_action_just_pressed("swap_loadout"):
 			loadout = Loadout.BLADE if loadout == Loadout.CROSSBOW else Loadout.CROSSBOW
 			primary_cd = 0.0
@@ -200,6 +221,7 @@ func _physics_process(delta: float) -> void:
 			use_secondary()
 	move_and_slide()
 	_update_knocked()
+	_update_sprite(delta)
 	_leave_scent(delta)
 	_footsteps(delta)
 	light_level = light_override if light_override >= 0.0 else Fx.light_level(self, global_position)
@@ -250,6 +272,25 @@ func _leave_scent(delta: float) -> void:
 			scent.append({"pos": global_position, "time": scent_clock})
 	while not scent.is_empty() and scent_clock - scent[0].time > SCENT_LIFETIME:
 		scent.pop_front()
+
+func cycle_gear() -> void:
+	gear_preset = (gear_preset + 1) % GEAR_PRESETS.size()
+	sprite.set_all_gear(GEAR_PRESETS[gear_preset].gear)
+	Fx.popup(self, global_position + Vector2(0, -40), GEAR_PRESETS[gear_preset].name, Color(1.0, 0.85, 0.55))
+
+func gear_name() -> String:
+	return GEAR_PRESETS[gear_preset].name
+
+func _update_sprite(delta: float) -> void:
+	if sprite == null:
+		return
+	var moving := velocity.length() > 20.0
+	sprite.animate(aim, moving, crouching, swing_time > 0.0, delta)
+	var a := 1.0
+	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
+		a = 0.35
+	sprite.set_tint(Color(1, 1, 1, a))
+	overlay.queue_redraw()
 
 func _process(delta: float) -> void:
 	if camera != null:
@@ -399,23 +440,31 @@ func _fall(cause: String) -> void:
 
 func _die() -> void:
 	is_dead = true
+	if sprite != null:
+		sprite.set_lying(true)
+		sprite.set_tint(Color(0.55, 0.5, 0.5))
 	died.emit()
 
 # --- Drawing ---------------------------------------------------------------------
 
 func _draw() -> void:
+	# Under the sprite: a contact shadow and the dodge trail.
+	draw_set_transform(Vector2(0, 2), 0.0, Vector2(1.0, 0.45))
+	draw_circle(Vector2.ZERO, RADIUS, Color(0, 0, 0, 0.35))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if is_dead:
-		draw_circle(Vector2.ZERO, RADIUS, Color(0.3, 0.28, 0.25))
-		draw_line(Vector2(-6, -6), Vector2(6, 6), Color(0.1, 0.1, 0.1), 2.0)
-		draw_line(Vector2(-6, 6), Vector2(6, -6), Color(0.1, 0.1, 0.1), 2.0)
 		return
-	var alpha := 1.0
-	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
-		alpha = 0.35
 	if dodge_time > 0.0:
-		draw_circle(-dodge_dir * 10.0, RADIUS * 0.9, Color(0.86, 0.8, 0.64, 0.3))
-		draw_circle(-dodge_dir * 20.0, RADIUS * 0.75, Color(0.86, 0.8, 0.64, 0.15))
+		draw_circle(-dodge_dir * 10.0 + Vector2(0, -10), RADIUS * 0.9, Color(0.86, 0.8, 0.64, 0.25))
+		draw_circle(-dodge_dir * 20.0 + Vector2(0, -10), RADIUS * 0.75, Color(0.86, 0.8, 0.64, 0.12))
 
+## On top of the sprite: swing arcs, the weapon and aim guides.
+func _draw_overlay() -> void:
+	if is_dead:
+		return
+	var o := overlay
+	var hand := Vector2(0, -9)   # Weapons are held at chest height.
+	var alpha := 1.0
 	if swing_time > 0.0:
 		var k := swing_time / SWING_FX_TIME
 		var is_shove := swing_kind == "shove"
@@ -424,33 +473,21 @@ func _draw() -> void:
 		var c := Color(0.8, 0.9, 1.0, 0.5 * k) if is_shove else Color(1.0, 1.0, 1.0, 0.8 * k)
 		var a := swing_dir.angle()
 		for i in 3:
-			draw_arc(Vector2.ZERO, reach * (0.55 + 0.2 * i), a - arc * 0.5, a + arc * 0.5, 18, c, 3.0 if is_shove else 2.0)
-
-	if crouching:
-		# Hunched and low: smaller and darker, with a dashed outline.
-		draw_circle(Vector2.ZERO, RADIUS * 0.85, Color(0.62, 0.58, 0.48, alpha))
-		var segs := 12
-		for i in segs:
-			if i % 2 == 0:
-				var a0 := TAU * i / segs
-				draw_arc(Vector2.ZERO, RADIUS + 3.0, a0, a0 + TAU / segs, 4, Color(0.8, 0.85, 1.0, 0.5), 1.5)
-	else:
-		draw_circle(Vector2.ZERO, RADIUS, Color(0.86, 0.8, 0.64, alpha))
-	draw_circle(aim * 5.0, 4.0, Color(0.3, 0.25, 0.2, alpha))
-
+			o.draw_arc(Vector2.ZERO, reach * (0.55 + 0.2 * i), a - arc * 0.5, a + arc * 0.5, 18, c, 3.0 if is_shove else 2.0)
 	if loadout == Loadout.CROSSBOW:
-		var tip := aim * (RADIUS + 14.0)
-		var side := aim.orthogonal() * 9.0
-		draw_line(aim * RADIUS * 0.5, tip, Color(0.55, 0.4, 0.25, alpha), 3.0)
-		draw_line(tip - aim * 6.0 + side, tip - aim * 6.0 - side, Color(0.6, 0.5, 0.4, alpha), 2.0)
+		var base := hand + aim * 4.0
+		var tip := hand + aim * (RADIUS + 10.0)
+		var side := aim.orthogonal() * 7.0
+		o.draw_line(base, tip, Color(0.55, 0.4, 0.25, alpha), 3.0)
+		o.draw_line(tip - aim * 5.0 + side, tip - aim * 5.0 - side, Color(0.6, 0.5, 0.4, alpha), 2.0)
 		if primary_cd > 0.0:
-			draw_arc(Vector2.ZERO, RADIUS + 5.0, -PI * 0.5, -PI * 0.5 + TAU * primary_ready(), 24, Color(1, 1, 1, 0.5), 2.0)
+			o.draw_arc(Vector2.ZERO, RADIUS + 5.0, -PI * 0.5, -PI * 0.5 + TAU * primary_ready(), 24, Color(1, 1, 1, 0.5), 2.0)
 		elif bolts > 0:
-			draw_line(aim * (RADIUS + 16.0), aim * 160.0, Color(1.0, 0.9, 0.6, 0.12), 1.0)
+			o.draw_line(hand + aim * (RADIUS + 12.0), hand + aim * 160.0, Color(1.0, 0.9, 0.6, 0.12), 1.0)
 	else:
-		draw_line(aim * RADIUS, aim * (RADIUS + 16.0), Color(0.8, 0.82, 0.86, alpha), 3.0)
+		o.draw_line(hand + aim * 6.0, hand + aim * (RADIUS + 12.0), Color(0.8, 0.82, 0.86, alpha), 3.0)
 		if rocks > 0:
 			var target_local := _rock_target() - global_position
 			var rc := Color(0.85, 0.85, 0.85, 0.35 if charges > 0 else 0.12)
-			draw_arc(target_local, 10.0, 0.0, TAU, 16, rc, 1.5)
-			draw_dashed_line(aim * (RADIUS + 6.0), target_local, Color(1, 1, 1, 0.08), 1.0, 6.0)
+			o.draw_arc(target_local, 10.0, 0.0, TAU, 16, rc, 1.5)
+			o.draw_dashed_line(aim * (RADIUS + 6.0), target_local, Color(1, 1, 1, 0.08), 1.0, 6.0)

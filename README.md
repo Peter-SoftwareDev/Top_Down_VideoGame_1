@@ -27,6 +27,8 @@ A gray-box test area for physics combat, before building real floors, keys and p
 - **Scent-hounds (pair):** fast and fragile (1 health). Short sight, but they follow the trail you walked over the last ~9 seconds, and smell you through cover up close. Their bark carries further than a shout. They're light, so kicks and rocks send them twice as far. Shake them off by outpacing the trail, or distract them with a rock.
 - **Stealth bonus:** a lethal hit on an unaware guard kills it outright. Hits on stunned guards do double damage.
 - **Floors and footsteps:** the test room has baked floor art: imperial paving in the main hall, hewn rock on the Bridge with an **iron catwalk** between the pits, hewn cells with **straw** in the Dark Hall, and Cistern **brick** around the Channel. Walking makes noise depending on the floor: straw is silent, stone and brick are quiet (only very close guards hear), puddles splash, and iron is loud enough to draw guards from about 160px. Crouching is always silent. The HUD shows the floor under you and how loud it is.
+- **Characters and gear:** everyone is a pixel-art sprite with walk, idle, crouch and attack frames in four directions, lit by the torches. The player is built from gear layers (cloak, head, torso, hands, feet), so his look changes with what he wears. Press **G** to try the four gear sets: Prisoner, Scavenger, Turncoat (stolen guard gear) and Relic-bearer. Guards use the same layers in Gaolwarden gear.
+- **Walls and pits:** walls are drawn as irregular masonry with a front face. Pits have broken, ragged edges, and their collision follows the drawn edge exactly.
 - **Feel:** a short hit stop on heavy hits, and slow motion on falls and drownings.
 
 ### Controls
@@ -40,6 +42,7 @@ A gray-box test area for physics combat, before building real floors, keys and p
 | Dodge (brief invulnerability, 1s cooldown) | Space or Shift |
 | Crouch | Hold C or Ctrl |
 | Back to weapon select | Esc |
+| Try gear sets (testing) | G |
 | Reset room | R |
 
 ## Floor art
@@ -65,6 +68,7 @@ Open `project.godot` in Godot 4.7 and press F5.
 - `scripts/Hazard.gd`: pits and deep water (set `kind`, `size` and `crumbles` in the inspector).
 - `scripts/Bolt.gd`, `scripts/Rock.gd`, `scripts/Pickup.gd`: projectiles and ammo pickups.
 - `scripts/Crate.gd`: breakable, kickable crates (set `contents` in the inspector).
+- `scripts/CharacterSprite.gd`: layered character sprites (gear stacking, outline, normal map, animation). Layers come from `tools/pixelart/characters.py`.
 - `scripts/Floor.gd`: shows the baked floor (with its normal map) and answers "what material is here?" for footsteps.
 - `scripts/Wall.gd`, `scripts/Torch.gd`: gray-box level pieces (tick `low` on a wall to make it a barricade).
 - `scripts/Fx.gd`, `scripts/fx/`: popups, rings, noise and screen shake.

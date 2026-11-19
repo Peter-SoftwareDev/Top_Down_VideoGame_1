@@ -32,6 +32,16 @@ func _ready() -> void:
 	knock_scale = 2.0
 	super._ready()
 
+func _make_sprite() -> Node2D:
+	var s := CharacterSprite.new()
+	s.sheet_path = "res://assets/art/chars/hound.png"
+	s.frame_size = Vector2i(32, 24)
+	s.lift = 6.0
+	return s
+
+func _sprite_height() -> float:
+	return 18.0
+
 func hear_noise(pos: Vector2, r: float) -> void:
 	if is_unaware() and global_position.distance_to(pos) <= r:
 		tracking = false
