@@ -1,39 +1,122 @@
-[gd_scene load_steps=5 format=3 uid="uid://d2c5j7sa4yb7v"]
+[gd_scene format=3 uid="uid://d2c5j7sa4yb7v"]
 
-[ext_resource type="Script" path="res://scripts/Main.gd" id="1_m5w4a"]
-[ext_resource type="Script" path="res://scripts/Player.gd" id="2_6p0u8"]
-[ext_resource type="Script" path="res://scripts/HUD.gd" id="3_j4h6m"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_5n1j0"]
-size = Vector2(24, 24)
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/Floor.gd" id="2_floor"]
+[ext_resource type="Script" path="res://scripts/Wall.gd" id="3_wall"]
+[ext_resource type="Script" path="res://scripts/Hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://scripts/Torch.gd" id="5_torch"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="6_player"]
+[ext_resource type="PackedScene" path="res://scenes/Enemy.tscn" id="7_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="8_hud"]
 
 [node name="Main" type="Node2D"]
-script = ExtResource("1_m5w4a")
+script = ExtResource("1_main")
 
-[node name="Player" type="CharacterBody2D" parent="."]
-position = Vector2(640, 360)
-script = ExtResource("2_6p0u8")
+[node name="Floor" type="Node2D" parent="."]
+position = Vector2(700, 450)
+script = ExtResource("2_floor")
+size = Vector2(1400, 900)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-shape = SubResource("RectangleShape2D_5n1j0")
+[node name="Hazards" type="Node2D" parent="."]
 
-[node name="Polygon2D" type="Polygon2D" parent="Player"]
-color = Color(0.2, 0.8, 1, 1)
-polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)
+[node name="Chasm" type="Node2D" parent="Hazards"]
+position = Vector2(700, 320)
+script = ExtResource("4_hazard")
+size = Vector2(300, 150)
 
-[node name="HUD" type="CanvasLayer" parent="."]
-script = ExtResource("3_j4h6m")
+[node name="CellPit" type="Node2D" parent="Hazards"]
+position = Vector2(330, 700)
+script = ExtResource("4_hazard")
+size = Vector2(140, 140)
 
-[node name="HealthLabel" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 160.0
-offset_bottom = 56.0
-text = "Health: 5"
+[node name="CisternPool" type="Node2D" parent="Hazards"]
+position = Vector2(1100, 680)
+script = ExtResource("4_hazard")
+kind = 1
+size = Vector2(360, 240)
 
-[node name="ScoreLabel" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 48.0
-offset_right = 160.0
-offset_bottom = 88.0
-text = "Score: 0"
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="North" type="StaticBody2D" parent="Walls"]
+position = Vector2(700, -20)
+script = ExtResource("3_wall")
+size = Vector2(1480, 40)
+
+[node name="South" type="StaticBody2D" parent="Walls"]
+position = Vector2(700, 920)
+script = ExtResource("3_wall")
+size = Vector2(1480, 40)
+
+[node name="West" type="StaticBody2D" parent="Walls"]
+position = Vector2(-20, 450)
+script = ExtResource("3_wall")
+size = Vector2(40, 900)
+
+[node name="East" type="StaticBody2D" parent="Walls"]
+position = Vector2(1420, 450)
+script = ExtResource("3_wall")
+size = Vector2(40, 900)
+
+[node name="PillarA" type="StaticBody2D" parent="Walls"]
+position = Vector2(430, 420)
+script = ExtResource("3_wall")
+size = Vector2(60, 60)
+
+[node name="PillarB" type="StaticBody2D" parent="Walls"]
+position = Vector2(1060, 200)
+script = ExtResource("3_wall")
+size = Vector2(48, 120)
+
+[node name="PillarC" type="StaticBody2D" parent="Walls"]
+position = Vector2(700, 700)
+script = ExtResource("3_wall")
+size = Vector2(90, 50)
+
+[node name="Torches" type="Node2D" parent="."]
+
+[node name="TorchNW" type="Node2D" parent="Torches"]
+position = Vector2(300, 14)
+script = ExtResource("5_torch")
+
+[node name="TorchNE" type="Node2D" parent="Torches"]
+position = Vector2(1100, 14)
+script = ExtResource("5_torch")
+
+[node name="TorchW" type="Node2D" parent="Torches"]
+position = Vector2(14, 450)
+script = ExtResource("5_torch")
+
+[node name="TorchE" type="Node2D" parent="Torches"]
+position = Vector2(1386, 450)
+script = ExtResource("5_torch")
+
+[node name="TorchS" type="Node2D" parent="Torches"]
+position = Vector2(700, 886)
+script = ExtResource("5_torch")
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="ChasmGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(580, 190)
+patrol_points = PackedVector2Array(580, 190, 820, 190)
+
+[node name="LedgeGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(600, 460)
+patrol_points = PackedVector2Array(600, 460, 800, 460)
+
+[node name="PoolGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(950, 520)
+patrol_points = PackedVector2Array(950, 520, 1250, 520)
+
+[node name="CellGuard" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(200, 560)
+patrol_points = PackedVector2Array(200, 560, 480, 560, 480, 840, 200, 840)
+
+[node name="Sentry" parent="Enemies" instance=ExtResource("7_enemy")]
+position = Vector2(1250, 200)
+facing_degrees = 180.0
+
+[node name="Player" parent="." instance=ExtResource("6_player")]
+position = Vector2(140, 150)
+
+[node name="HUD" parent="." instance=ExtResource("8_hud")]

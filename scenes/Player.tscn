@@ -1,16 +1,21 @@
-[gd_scene load_steps=3 format=3 uid="uid://c6y5v7rds22j8"]
+[gd_scene format=3 uid="uid://c6y5v7rds22j8"]
 
-[ext_resource type="Script" path="res://scripts/Player.gd" id="1_1soq8"]
+[ext_resource type="Script" path="res://scripts/Player.gd" id="1_player"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_3n7a0"]
-size = Vector2(24, 24)
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 12.0
 
 [node name="Player" type="CharacterBody2D"]
-script = ExtResource("1_1soq8")
+script = ExtResource("1_player")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_3n7a0")
+shape = SubResource("CircleShape2D_player")
 
-[node name="Polygon2D" type="Polygon2D" parent="."]
-color = Color(0.2, 0.8, 1, 1)
-polygon = PackedVector2Array(-12, -12, 12, -12, 12, 12, -12, 12)
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.35, 1.35)
+limit_left = -40
+limit_top = -40
+limit_right = 1440
+limit_bottom = 940
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0

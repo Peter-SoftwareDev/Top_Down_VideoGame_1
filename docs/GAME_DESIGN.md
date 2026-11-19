@@ -219,6 +219,15 @@ Prioritize testing whether physics combat and the floor loop are fun.
 
 ---
 
+## Decisions
+
+- **Engine:** Godot 4.7.
+- **Viewpoint:** Top-down. "Ledges" are pits and chasms. Ladders are dropped.
+- **Loadouts:** Each loadout pairs one lethal weapon with one non-lethal physics tool:
+  - **Crossbow + Shove:** lethal at range, physics push up close.
+  - **Blade + Stun Rock:** lethal up close, physics hit at range (stun, knockback and noise).
+- **First milestone:** M0 combat sandbox (built; see README).
+
 ## Proposed Answers (draft, not yet decided)
 
 These are suggestions to discuss. Nothing here is final until marked as decided.
@@ -228,7 +237,7 @@ These are suggestions to discuss. Nothing here is final until marked as decided.
 3. **Legacy currency:** Mostly from floors reached, optional rooms opened, and bosses defeated, with only a small amount from kills. This rewards sneaking as much as fighting.
 4. **Temporary abilities:** Two sources. Floor rewards offer a choice of one from three. Run currency is spent at a refuge or vendor between floors. No level-ups.
 5. **Optional room preview:** You can partly see inside through barred windows or a grate, and the locked door shows an icon for the room type (food, gear, shortcut).
-6. **Weapons:** *Basic*: a dependable short blade or club with a light combo plus the shove. It never breaks. *Special*: a crossbow with limited bolts that hits hard and knocks enemies back. It could pin enemies later. It wears down through limited ammo.
+6. **Weapons:** Decided (see Decisions): two loadouts, Crossbow + Shove and Blade + Stun Rock.
 7. **Main key and exit:** The main key has a unique glow and sound, and the exit door carries a matching imperial seal. The map marks the exit once you have seen it.
 8. **First boss:** A heavy foundry guardian. It can't be shoved until it is staggered, its attacks are telegraphed in phases, and the arena reuses what the player learned (pits and machinery). It can be beaten with plain weapons alone.
 
