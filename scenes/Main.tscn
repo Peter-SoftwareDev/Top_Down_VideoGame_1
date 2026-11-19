@@ -77,6 +77,18 @@ position = Vector2(700, 700)
 script = ExtResource("3_wall")
 size = Vector2(90, 50)
 
+[node name="BarricadeSentry" type="StaticBody2D" parent="Walls"]
+position = Vector2(1150, 200)
+script = ExtResource("3_wall")
+size = Vector2(24, 90)
+low = true
+
+[node name="BarricadeMiddle" type="StaticBody2D" parent="Walls"]
+position = Vector2(560, 560)
+script = ExtResource("3_wall")
+size = Vector2(90, 24)
+low = true
+
 [node name="Torches" type="Node2D" parent="."]
 
 [node name="TorchNW" type="Node2D" parent="Torches"]

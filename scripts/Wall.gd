@@ -8,11 +8,17 @@ const L = preload("res://scripts/Layers.gd")
 	set(value):
 		size = value
 		queue_redraw()
+## A low barricade: you can't walk through it, but guards see over it
+## unless you're crouching behind it.
+@export var low: bool = false:
+	set(value):
+		low = value
+		queue_redraw()
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	collision_layer = L.WORLD
+	collision_layer = L.PROP if low else L.WORLD
 	collision_mask = 0
 	var cs := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
@@ -22,6 +28,19 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var r := Rect2(-size * 0.5, size)
+	if low:
+		draw_rect(r, Color(0.33, 0.31, 0.3))
+		draw_rect(r, Color(0.18, 0.16, 0.16), false, 2.0)
+		var step := 12.0
+		var x := r.position.x + step
+		while x < r.end.x:
+			draw_line(Vector2(x, r.position.y + 2), Vector2(x, r.end.y - 2), Color(0.22, 0.2, 0.2), 1.0)
+			x += step
+		var y := r.position.y + step
+		while y < r.end.y:
+			draw_line(Vector2(r.position.x + 2, y), Vector2(r.end.x - 2, y), Color(0.22, 0.2, 0.2), 1.0)
+			y += step
+		return
 	draw_rect(r, Color(0.24, 0.23, 0.27))
 	draw_rect(Rect2(r.position, Vector2(size.x, minf(8.0, size.y))), Color(0.34, 0.32, 0.36))
 	draw_rect(r, Color(0.1, 0.09, 0.11), false, 2.0)

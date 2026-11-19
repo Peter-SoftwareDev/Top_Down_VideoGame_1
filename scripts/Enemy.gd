@@ -35,6 +35,7 @@ const NOTICE_TIME_NEAR := 0.3      # Seconds of sight to raise the alarm, up clo
 const NOTICE_TIME_FAR := 1.3       # ...and at the edge of vision.
 const SUSPICION_DECAY := 0.4       # Per second while the player is out of sight.
 const SUSPICION_INVESTIGATE := 0.25
+const CROUCH_NOTICE_MULT := 1.5   # A crouching player in the open takes longer to notice.
 # Alarm
 const SHOUT_TIME := 0.5            # Window to silence a guard before the alarm goes off.
 const ALARM_RADIUS := 330.0
@@ -304,10 +305,14 @@ func _can_see_player(alerted: bool) -> bool:
 	if not alerted and dist > close_sense:
 		if absf(facing.angle_to(to)) > deg_to_rad(vision_angle_degrees) * 0.5:
 			return false
-	return _line_clear(player.global_position)
+	return _line_clear(player.global_position, _cover_mask())
 
-func _line_clear(to_pos: Vector2) -> bool:
-	var q := PhysicsRayQueryParameters2D.create(global_position, to_pos, L.SIGHT_MASK)
+## Tall walls always block sight. Low cover (crates, barricades) only hides a crouching player.
+func _cover_mask() -> int:
+	return L.SIGHT_MASK if player.get("crouching") else L.WORLD
+
+func _line_clear(to_pos: Vector2, mask: int = L.SIGHT_MASK) -> bool:
+	var q := PhysicsRayQueryParameters2D.create(global_position, to_pos, mask)
 	return get_world_2d().direct_space_state.intersect_ray(q).is_empty()
 
 ## Fill or drain the suspicion meter. Returns true when the guard has noticed the player.
@@ -323,6 +328,8 @@ func _update_suspicion(delta: float) -> bool:
 			var notice_time := lerpf(NOTICE_TIME_NEAR, NOTICE_TIME_FAR, t)
 			if wary:
 				notice_time *= WARY_NOTICE_MULT
+			if player.get("crouching"):
+				notice_time *= CROUCH_NOTICE_MULT
 			suspicion += delta / notice_time
 	else:
 		suspicion = maxf(suspicion - SUSPICION_DECAY * delta, 0.0)
@@ -614,7 +621,7 @@ func _update_cone() -> void:
 	for i in CONE_RAYS + 1:
 		var ang := -half + (2.0 * half) * float(i) / CONE_RAYS
 		var end := global_position + facing.rotated(ang) * reach
-		var hit := space.intersect_ray(PhysicsRayQueryParameters2D.create(global_position, end, L.SIGHT_MASK))
+		var hit := space.intersect_ray(PhysicsRayQueryParameters2D.create(global_position, end, L.WORLD))
 		if not hit.is_empty():
 			end = hit.position
 		cone_points.append(end - global_position)

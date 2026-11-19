@@ -55,6 +55,9 @@ func _draw_hud() -> void:
 		var cc := Color(0.9, 0.85, 0.6) if i < player.charges else Color(0.3, 0.3, 0.28)
 		canvas.draw_rect(Rect2(250 - i * 10, 76, 7, 7), cc)
 
+	if player.crouching:
+		_text(Vector2(24, 128), "CROUCHED: hidden behind crates and barricades", 14, Color(0.75, 0.82, 1.0))
+
 	var k: Dictionary = main.kills
 	var lines := [
 		"Guards left: %d / %d" % [main.enemies_left, main.enemies_total],
@@ -68,7 +71,7 @@ func _draw_hud() -> void:
 
 	var help := [
 		"WASD move  |  Mouse aim  |  LMB primary  |  RMB secondary",
-		"Space dodge  |  Q swap loadout  |  R reset room",
+		"C / Ctrl crouch  |  Space dodge  |  R reset room  |  Esc change weapon",
 	]
 	for i in help.size():
 		_text(Vector2(16, vp.y - 34 + i * 18), help[i], 13, Color(0.8, 0.78, 0.72, 0.8))

@@ -23,12 +23,18 @@ enum Loadout { CROSSBOW, BLADE }
 @export var max_bolts: int = 10
 @export var rocks: int = 3
 @export var max_rocks: int = 6
+## Testing only: allow swapping loadout mid-run with Q. Normally the loadout is
+## locked in on the weapon select screen.
+@export var allow_loadout_swap: bool = false
+## Testing only: crouch without holding the key.
+@export var crouch_hold: bool = false
 ## Aim at the mouse. Tests turn this off and set `aim` directly.
 @export var mouse_aim: bool = true
 
 const RADIUS := 12.0
 const TARGET_RADIUS := 14.0
 const SPEED := 200.0
+const CROUCH_SPEED := 95.0
 const DODGE_SPEED := 560.0
 const DODGE_TIME := 0.2
 const DODGE_COOLDOWN := 1.0
@@ -60,6 +66,8 @@ const ROCK_COOLDOWN := 2.5          # Time to refill one charge.
 
 var health := 5
 var is_dead := false
+## Crouched: slow, but hidden from guards behind crates and barricades.
+var crouching := false
 var aim := Vector2.RIGHT
 var primary_cd := 0.0
 var charges := 1
@@ -157,17 +165,18 @@ func _physics_process(delta: float) -> void:
 			aim = to_mouse.normalized()
 
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	crouching = (crouch_hold or Input.is_action_pressed("crouch")) and dodge_time <= 0.0 and not knocked
 	if dodge_time > 0.0:
 		dodge_time -= delta
 		velocity = dodge_dir * DODGE_SPEED
 	else:
-		velocity = input * SPEED + hurt_velocity
+		velocity = input * (CROUCH_SPEED if crouching else SPEED) + hurt_velocity
 		hurt_velocity = hurt_velocity.move_toward(Vector2.ZERO, HURT_FRICTION * delta)
 		if Input.is_action_just_pressed("dodge") and dodge_cd <= 0.0:
 			dodge_dir = input if input != Vector2.ZERO else aim
 			dodge_time = DODGE_TIME
 			dodge_cd = DODGE_COOLDOWN + DODGE_TIME
-		if Input.is_action_just_pressed("swap_loadout"):
+		if allow_loadout_swap and Input.is_action_just_pressed("swap_loadout"):
 			loadout = Loadout.BLADE if loadout == Loadout.CROSSBOW else Loadout.CROSSBOW
 			primary_cd = 0.0
 			charges = secondary_max_charges
@@ -383,7 +392,16 @@ func _draw() -> void:
 		for i in 3:
 			draw_arc(Vector2.ZERO, reach * (0.55 + 0.2 * i), a - arc * 0.5, a + arc * 0.5, 18, c, 3.0 if is_shove else 2.0)
 
-	draw_circle(Vector2.ZERO, RADIUS, Color(0.86, 0.8, 0.64, alpha))
+	if crouching:
+		# Hunched and low: smaller and darker, with a dashed outline.
+		draw_circle(Vector2.ZERO, RADIUS * 0.85, Color(0.62, 0.58, 0.48, alpha))
+		var segs := 12
+		for i in segs:
+			if i % 2 == 0:
+				var a0 := TAU * i / segs
+				draw_arc(Vector2.ZERO, RADIUS + 3.0, a0, a0 + TAU / segs, 4, Color(0.8, 0.85, 1.0, 0.5), 1.5)
+	else:
+		draw_circle(Vector2.ZERO, RADIUS, Color(0.86, 0.8, 0.64, alpha))
 	draw_circle(aim * 5.0, 4.0, Color(0.3, 0.25, 0.2, alpha))
 
 	if loadout == Loadout.CROSSBOW:

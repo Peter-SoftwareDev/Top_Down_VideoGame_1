@@ -223,6 +223,9 @@ Prioritize testing whether physics combat and the floor loop are fun.
 
 - **Engine:** Godot 4.7.
 - **Viewpoint:** Top-down. "Ledges" are pits and chasms. Ladders are dropped.
+- **Weapon select:** the loadout is chosen on a select screen at the start and locked in for the run.
+- **Crouch:** crouching is slow, and hides you from guards behind low cover (crates, barricades). Standing, guards see over low cover. Tall walls always block sight.
+- **Gaoler charge rule:** it never charges across a pit or water at you. A pit *behind* you is fair game: sidestep and it overshoots.
 - **Loadouts:** Each loadout pairs one lethal weapon with one non-lethal physics tool:
   - **Crossbow + Shove:** lethal at range, physics push up close.
   - **Blade + Stun Rock:** lethal up close, physics hit at range (stun, knockback and noise).
@@ -254,6 +257,52 @@ Each idea has a different relationship with the physics, so each one tests somet
 **Built in the sandbox: Gaoler and Scent-hound.** One change from the table: deep water can't break the hound's trail (the player can't swim), so its trail fades over time and rocks distract it instead. The Gaoler also crushes anything its charge pins against a wall.
 
 Originally suggested as the first pair: They sit at opposite ends of the physics (too heavy to kick vs. flies across the room), so together they show whether kicking has depth.
+
+## The Chasms: What Are They? (options to choose from)
+
+Pits are the game's signature hazard, so they should mean something in the world. Here are three framings that can be combined.
+
+### Option A: "The Drop" (recommended as the main idea)
+The fortress wasn't built *on* the dead lands. It was built *down into* a great rift at their edge, as a prison that goes downwards. Imperial law sentenced the worst prisoners "to the Drop": the deeper you were sent, the worse your crime. Over centuries the floors decayed, and the chasms are places where floors have collapsed into the levels below.
+- **Why the player goes down:** the way out of the sealed lands runs *under* the border, through the fortress's foundations. Escaping means descending further into the place everyone fears.
+- **Gameplay links:**
+  - *Crumbling rims:* the fortress is still collapsing into the rift.
+  - *Falling enemies:* a guard you knock into a chasm lands on a floor below. You might find its body (and the bolts in it) when you get there, a reward for good kicks.
+  - *Later upgrade:* a rope or grapple could make a risky "take the Drop" shortcut possible.
+- **Atmosphere:** wind moaning up from the shafts, faint lights far below (floors you haven't reached), imperial sentencing carvings above the bigger shafts, rusted chains bolted at the rims.
+
+### Option B: "The Wound"
+The empire sealed the dead lands with a vast engine driven deep into the earth. The seal is failing, and the chasms are cracks spreading from it. Things crawl up out of them.
+- Gives the Foundry and its machinery a purpose (they powered the seal) and offers a long-term mystery for the family-rescue story.
+- The cracks could glow or breathe, and get worse the deeper you go.
+
+### Option C: Each floor has its own hazard with a purpose
+- **Prison: oubliette shafts.** Grated holes where prisoners were dropped and forgotten. Some grates have rusted away; these are the crumbling rims.
+- **Cistern: sluice channels.** Deep water that the old waterworks still pushes through. Sluice gates could later be opened and closed as machinery.
+- **Foundry: slag chutes and casting pits.** Later they could be molten, giving fire as a hazard.
+
+**Recommendation:** use **A** as the backbone (the fortress is a downward prison and the chasms are collapses into the Drop), **C** for each floor's flavour, and keep **B** as a whispered mystery for later chapters.
+
+## More Mechanics to Explore (next round)
+
+**Stealth depth**
+1. **Bodies get discovered.** A guard who finds a body raises the alarm or turns wary. *Bodies that fall into a pit or water are never found,* which gives the physics kills a stealth purpose.
+2. **Light and shadow.** Guards see less far into darkness. Torches can be knocked out with a rock (Blade) or a bolt (Crossbow), and crouching in shadow is safer still.
+3. **Footstep noise.** Walking makes a little noise, crouching none, dodging a lot. Rubble and puddles are louder.
+4. **Silent takedown.** Crouch up behind an unaware guard and take it down without a weapon. Slow (about a second), and it fails if anyone sees it.
+
+**Combat depth**
+5. **Blade parry.** A slash timed in the last moment of a guard's wind-up staggers it. This gives the Blade a skill ceiling to match the Crossbow's aim.
+6. **Charged kick.** Hold the kick to push further (more distance, longer commitment).
+7. **Spiked walls and hanging cages.** A wall slam into spikes kills. A bolt or rock drops a hanging cage on whoever is underneath.
+8. **Grab and throw.** Pick up a crate, rock or body and throw it.
+
+**Pressure and stakes**
+9. **Eating takes time.** Food heals, but eating takes about a second during which you're vulnerable.
+10. **Guard morale.** When guards see allies thrown into the Drop, the rest hesitate. A few might even flee and raise the alarm elsewhere.
+11. **One-use tools.** For example a smoke pot that blocks vision cones, or an oil flask (fire, later).
+
+**Suggested next three:** *bodies get discovered* (with pits hiding them), *light and shadow*, and the *Blade parry*. The first two deepen stealth and tie it to the physics and the gloomy setting. The parry gives the Blade loadout its own skill moment.
 
 ## Proposed Answers (draft, not yet decided)
 

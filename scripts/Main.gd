@@ -2,6 +2,10 @@ extends Node2D
 ## M0 combat sandbox: one room to test whether physics combat is fun.
 
 const Fx = preload("res://scripts/Fx.gd")
+const LoadoutSelect = preload("res://scripts/LoadoutSelect.gd")
+
+## The loadout picked on the select screen. Survives room resets (R); Esc clears it.
+static var chosen_loadout := -1
 
 @onready var player = $Player
 @onready var hud = $HUD
@@ -40,12 +44,33 @@ func _ready() -> void:
 	player.died.connect(_on_player_died)
 	hud.setup(self, player)
 
+	if chosen_loadout < 0:
+		get_tree().paused = true
+		var select := LoadoutSelect.new()
+		select.chosen.connect(_on_loadout_chosen)
+		add_child(select)
+	else:
+		_apply_loadout(chosen_loadout)
+
+func _on_loadout_chosen(loadout: int) -> void:
+	chosen_loadout = loadout
+	_apply_loadout(loadout)
+	get_tree().paused = false
+
+func _apply_loadout(loadout: int) -> void:
+	player.loadout = loadout
+	player.charges = player.secondary_max_charges
+
 func _process(_delta: float) -> void:
 	if _slow_until_ms > 0 and Time.get_ticks_msec() >= _slow_until_ms:
 		_slow_until_ms = 0
 		_slow_scale = 1.0
 		Engine.time_scale = 1.0
 	if Input.is_action_just_pressed("restart"):
+		Engine.time_scale = 1.0
+		get_tree().reload_current_scene()
+	elif Input.is_action_just_pressed("menu"):
+		chosen_loadout = -1
 		Engine.time_scale = 1.0
 		get_tree().reload_current_scene()
 

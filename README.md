@@ -7,7 +7,8 @@ See [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) for the full design.
 
 One gray-box room for testing whether physics combat is fun before building floors, keys and progression.
 
-- **Two loadouts** (press Q to swap while testing):
+- **Weapon select:** pick a loadout at the start. It's locked in for the run; R resets the room with the same loadout, and Esc goes back to the select screen.
+- **Two loadouts:**
   - **Crossbow + Kick**: a lethal bolt at range, plus a short-range kick that doesn't kill but sends guards (and crates) sliding.
   - **Blade + Stun Rock**: a lethal slash up close, plus a thrown rock that stuns, knocks back and makes noise.
 - **Charges and ammo:** the kick and the rock each have 1 charge that refills on a cooldown. Bolts and rocks are limited, but you can pick them up again where they land (glowing on the floor). Ammo that goes into a pit or water is lost.
@@ -15,7 +16,8 @@ One gray-box room for testing whether physics combat is fun before building floo
 - **Crates:** block sight, slide when kicked, crush guards they hit, and break noisily after two hard impacts, spilling any ammo inside.
 - **Chain reactions:** anything knocked into a guard or crate passes the push along. A guard slammed hard into a wall is stunned, and a stunned guard flies further when kicked.
 - **Guards:** patrol with vision cones. Seeing you fills a suspicion meter (faster up close). When it's full, the guard stops to shout "HEY!", which brings nearby guards running. Kill or knock it mid-shout to stop the alarm. Once alerted, guards stay wary for the rest of the room: they see further, sweep around, and patrol your last known spot. Their lunge is telegraphed (orange ring), but sometimes delayed as a feint.
-- **Gaoler (brute):** big, slow, 6 health. Kicks and rocks don't move it ("TOO HEAVY"). Only a crash from a guard or crate, or slamming into a wall, staggers it, and while staggered it can be kicked and takes double damage. From mid-range it telegraphs a straight shoulder charge with an orange lane on the floor. Sidestep it into a wall and it staggers. Get hit and you take 2 damage and get thrown hard (possibly into a pit). It bowls over guards and crates in its path, crushes anything it pins against a wall, and can charge straight into the chasm.
+- **Crouch:** hold C or Ctrl to move slowly and hunch down. Crouched behind low cover (crates and the stone barricades), guards can't see you. Standing, they see over it. Crouching in the open also makes guards slower to notice you.
+- **Gaoler (brute):** big, slow, 6 health. Kicks and rocks don't move it ("TOO HEAVY"). Only a crash from a guard or crate, or slamming into a wall, staggers it, and while staggered it can be kicked and takes double damage. From mid-range it telegraphs a straight shoulder charge with an orange lane on the floor. Sidestep it into a wall and it staggers. Get hit and you take 2 damage and get thrown hard (possibly into a pit). It bowls over guards and crates in its path, and crushes anything it pins against a wall. It won't charge at you across a pit or water, but if the chasm is *behind* you, sidestep and it overshoots straight in.
 - **Scent-hounds (pair):** fast and fragile (1 health). Short sight, but they follow the trail you walked over the last ~9 seconds, and smell you through cover up close. Their bark carries further than a shout. They're light, so kicks and rocks send them twice as far. Shake them off by outpacing the trail, or distract them with a rock.
 - **Stealth bonus:** a lethal hit on an unaware guard kills it outright. Hits on stunned guards do double damage.
 - **Feel:** a short hit stop on heavy hits, and slow motion on falls and drownings.
@@ -29,7 +31,8 @@ One gray-box room for testing whether physics combat is fun before building floo
 | Primary (bolt / slash) | Left mouse |
 | Secondary (kick / rock) | Right mouse or E |
 | Dodge (brief invulnerability, 1s cooldown) | Space or Shift |
-| Swap loadout | Q or Tab |
+| Crouch | Hold C or Ctrl |
+| Back to weapon select | Esc |
 | Reset room | R |
 
 ## Running the project
@@ -40,9 +43,11 @@ Open `project.godot` in Godot 4.7 and press F5.
 
 - `scenes/Main.tscn`: the sandbox room. Walls, hazards, torches and guards can all be moved in the editor.
 - `scripts/Player.gd`, `scripts/Enemy.gd`: the player and the guards. Tuning constants sit at the top of each file.
+- `scripts/LoadoutSelect.gd`: the weapon select screen.
+- `scripts/Gaoler.gd`, `scripts/Hound.gd`: enemy types built on `Enemy.gd`.
 - `scripts/Hazard.gd`: pits and deep water (set `kind`, `size` and `crumbles` in the inspector).
 - `scripts/Bolt.gd`, `scripts/Rock.gd`, `scripts/Pickup.gd`: projectiles and ammo pickups.
 - `scripts/Crate.gd`: breakable, kickable crates (set `contents` in the inspector).
-- `scripts/Wall.gd`, `scripts/Floor.gd`, `scripts/Torch.gd`: gray-box level pieces.
+- `scripts/Wall.gd`, `scripts/Floor.gd`, `scripts/Torch.gd`: gray-box level pieces (tick `low` on a wall to make it a barricade).
 - `scripts/Fx.gd`, `scripts/fx/`: popups, rings, noise and screen shake.
 - `scripts/Layers.gd`: physics layer numbers.
