@@ -267,10 +267,7 @@ Originally suggested as the first pair: They sit at opposite ends of the physics
 - **The chasms** (Option A, "The Drop", adapted): the fortress is built down the wall of the Rift. Its chasms are places where floors have collapsed towards the depths. Things that fall are gone, or land somewhere far below.
 - **The floors as a journey:** Prison (the fortress's upper levels) → Cistern (the waterworks cut into the Rift wall) → Foundry (the forges at the bottom of the fortress) → the gates of the underground world.
 
-**Naming note (keeping it original):** "Deeping", an underground king's mines, orcs and flying beasts together echo a very famous fantasy series closely. The design brief asks for a distinct identity, so I'd suggest original names. A few starting points:
-- **The underground world:** *the Hollowreach*, *the Undervault*, *the Lowmarch*, *Gloamhold*
-- **The old king and his mines:** *the Mine-Kings of Varrow*, *the Hearthless King*, *the Ashen Delvings*
-- **The surface threats:** keep "orcs" (a generic fantasy term) or give them a culture of their own. The flying beasts could become something specific, e.g. *wyrmkites* or *carrion drakes*.
+**Names:** all the original names are now placed in the world. See [`WORLD.md`](WORLD.md).
 
 ## The Chasms: What Are They? (options to choose from)
 

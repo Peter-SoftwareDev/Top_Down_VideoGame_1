@@ -1,0 +1,46 @@
+GIMP Palette
+Name: Gloamhold
+Columns: 8
+#
+ 13  11  20	void
+ 23  20  31	stone0
+ 34  29  44	stone1
+ 46  40  57	stone2
+ 59  52  71	stone3
+ 75  67  87	stone4
+ 94  85 105	stone5
+116 105 125	stone6
+141 130 150	stone7
+ 10  20  32	water0
+ 16  34  58	water1
+ 26  53  84	water2
+ 42  82 118	water3
+ 74 122 156	water4
+143 181 201	water5
+ 58  26  14	fire0
+110  42  18	fire1
+168  68  26	fire2
+217 113  43	fire3
+242 165  65	fire4
+255 215 122	fire5
+255 243 196	fire6
+ 58  38  22	wood0
+ 90  59  34	wood1
+125  85  50	wood2
+160 116  67	wood3
+ 15  46  44	rift0
+ 31  90  80	rift1
+ 63 154 134	rift2
+143 224 200	rift3
+ 74  20  24	red0
+138  42  42	red1
+196  72  60	red2
+107  74  58	skin0
+156 112  88	skin1
+201 154 120	skin2
+116 105 125	rag0
+184 168 136	rag1
+232 220 192	rag2
+ 60  64  72	metal0
+ 98 106 117	metal1
+154 163 173	metal2
