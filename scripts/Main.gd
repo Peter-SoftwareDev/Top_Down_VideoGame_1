@@ -21,12 +21,14 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	# Gloom: darken everything, then light the player and the torches.
 	var dark := CanvasModulate.new()
-	dark.color = Color(0.5, 0.5, 0.6)
+	dark.color = Color(0.36, 0.36, 0.46)
 	add_child(dark)
 	var lamp := PointLight2D.new()
 	lamp.texture = Fx.radial_texture()
-	lamp.texture_scale = 2.6
-	lamp.energy = 0.85
+	# A faint glow so you can see where you're going. Guards ignore it: only torches
+	# and braziers make you visible (see the light meter).
+	lamp.texture_scale = 2.0
+	lamp.energy = 0.55
 	lamp.color = Color(1.0, 0.93, 0.82)
 	player.add_child(lamp)
 

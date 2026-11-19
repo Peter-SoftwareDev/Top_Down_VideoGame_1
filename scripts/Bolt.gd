@@ -17,7 +17,7 @@ var done := false
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = L.PROJECTILE_MASK
+	collision_mask = L.PROJECTILE_MASK | L.TORCH
 	var cs := CollisionShape2D.new()
 	var c := CircleShape2D.new()
 	c.radius = 4.0
@@ -26,6 +26,7 @@ func _ready() -> void:
 	rotation = direction.angle()
 	z_index = 5
 	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
 
 func _physics_process(delta: float) -> void:
 	position += direction * speed * delta
@@ -35,8 +36,23 @@ func _physics_process(delta: float) -> void:
 		Fx.drop(self, global_position, "bolt")
 		queue_free()
 
+func _on_area_entered(area: Area2D) -> void:
+	_hit_torch(area.get_parent())
+
+## Returns true if `torch` was a lit torch or brazier and the bolt put it out.
+func _hit_torch(torch: Node) -> bool:
+	if done or torch == null or not torch.has_method("extinguish") or not torch.lit:
+		return false
+	done = true
+	torch.extinguish()
+	Fx.drop(self, global_position - direction * 22.0, "bolt")
+	queue_free()
+	return true
+
 func _on_body_entered(body: Node) -> void:
 	if done:
+		return
+	if _hit_torch(body.get_parent()):   # A brazier's solid base.
 		return
 	if body.is_in_group("enemy"):
 		if body.is_dying():

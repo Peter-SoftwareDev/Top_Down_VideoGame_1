@@ -35,7 +35,11 @@ const NOTICE_TIME_NEAR := 0.3      # Seconds of sight to raise the alarm, up clo
 const NOTICE_TIME_FAR := 1.3       # ...and at the edge of vision.
 const SUSPICION_DECAY := 0.4       # Per second while the player is out of sight.
 const SUSPICION_INVESTIGATE := 0.25
-const CROUCH_NOTICE_MULT := 1.5   # A crouching player in the open takes longer to notice.
+const CROUCH_NOTICE_MULT := 1.5
+# Light: in pitch darkness an unaware guard sees only this share of its normal range.
+const DARK_SIGHT_MULT := 0.35
+const DARK_SIGHT_MULT_ALERTED := 0.6
+const RELIGHT_REACH := 70.0   # A crouching player in the open takes longer to notice.
 # Alarm
 const SHOUT_TIME := 0.5            # Window to silence a guard before the alarm goes off.
 const ALARM_RADIUS := 330.0
@@ -67,7 +71,7 @@ const LOSE_TRACK_TIME := 2.5
 const PATROL_PAUSE := 0.8
 const INVESTIGATE_LOOK_TIME := 1.8
 const STUCK_TIME := 0.6
-const DETOUR_TIME := 0.5
+const DETOUR_TIME := 0.8
 const CONE_RAYS := 14
 
 # Per-type tunables. Enemy types (Gaoler.gd, Hound.gd) change these before calling super._ready().
@@ -298,7 +302,7 @@ func _can_see_player(alerted: bool) -> bool:
 		return false
 	var to := player.global_position - global_position
 	var dist := to.length()
-	if dist > _sight_range(alerted):
+	if dist > close_sense and dist > _sight_range(alerted) * _light_factor(alerted):
 		return false
 	if dist <= close_sense and close_sense_through_walls:
 		return true
@@ -306,6 +310,19 @@ func _can_see_player(alerted: bool) -> bool:
 		if absf(facing.angle_to(to)) > deg_to_rad(vision_angle_degrees) * 0.5:
 			return false
 	return _line_clear(player.global_position, _cover_mask())
+
+## How well the player can be seen where they stand: 1 in full light, less in darkness.
+func _light_factor(alerted: bool) -> float:
+	var l = player.get("light_level")
+	if l == null:
+		return 1.0
+	return lerpf(DARK_SIGHT_MULT_ALERTED if alerted else DARK_SIGHT_MULT, 1.0, l)
+
+## A guard checking out a noise relights any doused torch it finds there.
+func _try_relight() -> void:
+	for t in get_tree().get_nodes_in_group("torch"):
+		if not t.lit and global_position.distance_to(t.global_position) <= RELIGHT_REACH:
+			t.relight()
 
 ## Tall walls always block sight. Low cover (crates, barricades) only hides a crouching player.
 func _cover_mask() -> int:
@@ -324,7 +341,8 @@ func _update_suspicion(delta: float) -> bool:
 		if dist <= close_sense:
 			suspicion = 1.0
 		else:
-			var t := clampf((dist - close_sense) / (_sight_range(false) - close_sense), 0.0, 1.0)
+			var reach := maxf(_sight_range(false) * _light_factor(false), close_sense + 1.0)
+			var t := clampf((dist - close_sense) / (reach - close_sense), 0.0, 1.0)
 			var notice_time := lerpf(NOTICE_TIME_NEAR, NOTICE_TIME_FAR, t)
 			if wary:
 				notice_time *= WARY_NOTICE_MULT
@@ -427,6 +445,7 @@ func _do_investigate(delta: float) -> void:
 		return
 	else:
 		velocity = Vector2.ZERO
+		_try_relight()
 		facing = facing.rotated(2.0 * delta)
 		look_time -= delta
 		if look_time <= 0.0:

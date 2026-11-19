@@ -26,6 +26,8 @@ enum Loadout { CROSSBOW, BLADE }
 ## Testing only: allow swapping loadout mid-run with Q. Normally the loadout is
 ## locked in on the weapon select screen.
 @export var allow_loadout_swap: bool = false
+## Testing only: force the light level (0..1). Negative = use the real lighting.
+@export var light_override: float = -1.0
 ## Testing only: crouch without holding the key.
 @export var crouch_hold: bool = false
 ## Aim at the mouse. Tests turn this off and set `aim` directly.
@@ -68,6 +70,8 @@ var health := 5
 var is_dead := false
 ## Crouched: slow, but hidden from guards behind crates and barricades.
 var crouching := false
+## How lit the player's spot is (0 dark .. 1 bright). Guards see much further in light.
+var light_level := 1.0
 var aim := Vector2.RIGHT
 var primary_cd := 0.0
 var charges := 1
@@ -191,6 +195,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_knocked()
 	_leave_scent(delta)
+	light_level = light_override if light_override >= 0.0 else Fx.light_level(self, global_position)
 	queue_redraw()
 
 ## While being thrown by a hit, the player can slide over a rim and fall in.

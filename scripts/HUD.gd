@@ -55,8 +55,16 @@ func _draw_hud() -> void:
 		var cc := Color(0.9, 0.85, 0.6) if i < player.charges else Color(0.3, 0.3, 0.28)
 		canvas.draw_rect(Rect2(250 - i * 10, 76, 7, 7), cc)
 
+	# Light meter: how visible you are right now.
+	var lv: float = player.light_level
+	var label := "LIT" if lv >= 0.6 else ("DIM" if lv >= 0.25 else "DARK")
+	var eye := Vector2(30, 128)
+	canvas.draw_rect(Rect2(12, 112, 412, 30), Color(0, 0, 0, 0.5))
+	canvas.draw_circle(eye, 8.0, Color(0.15, 0.15, 0.15))
+	canvas.draw_circle(eye, 8.0 * (0.35 + 0.65 * lv), Color(1.0, 0.8, 0.45).lerp(Color(0.35, 0.4, 0.55), 1.0 - lv))
+	_text(Vector2(46, 133), label, 14, Color(1.0, 0.85, 0.55) if lv >= 0.6 else Color(0.7, 0.75, 0.9))
 	if player.crouching:
-		_text(Vector2(24, 128), "CROUCHED: hidden behind crates and barricades", 14, Color(0.75, 0.82, 1.0))
+		_text(Vector2(100, 133), "CROUCHED: hidden behind low cover", 14, Color(0.75, 0.82, 1.0))
 
 	var k: Dictionary = main.kills
 	var lines := [

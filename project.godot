@@ -75,6 +75,9 @@ menu={
 2d_physics/layer_3="enemy"
 2d_physics/layer_4="hazard_edge"
 2d_physics/layer_5="hazard_zone"
+2d_physics/layer_6="prop"
+2d_physics/layer_7="low_wall"
+2d_physics/layer_8="torch"
 
 [physics]
 

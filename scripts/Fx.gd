@@ -64,6 +64,26 @@ static func drop(node: Node, pos: Vector2, kind: String, amount: int = 1) -> voi
 	p.position = pos
 	node.get_tree().current_scene.add_child.call_deferred(p)
 
+## How lit a spot is, 0 (pitch dark) to 1 (right by a flame), from torches and braziers.
+## Tall walls cast shadows. The player's own dim sight-light doesn't count.
+const AMBIENT_LIGHT := 0.0
+static func light_level(node: Node, pos: Vector2) -> float:
+	var level := AMBIENT_LIGHT
+	var space: PhysicsDirectSpaceState2D = node.get_tree().current_scene.get_world_2d().direct_space_state
+	for t in node.get_tree().get_nodes_in_group("torch"):
+		if not t.lit:
+			continue
+		var d: float = t.global_position.distance_to(pos)
+		if d >= t.light_radius:
+			continue
+		var l := 1.0 - pow(d / t.light_radius, 2.0)
+		if l <= level:
+			continue
+		var q := PhysicsRayQueryParameters2D.create(t.global_position, pos, L.WORLD)
+		if space.intersect_ray(q).is_empty():
+			level = l
+	return clampf(level, 0.0, 1.0)
+
 ## A soft round texture used for lights.
 static func radial_texture(px: int = 256) -> GradientTexture2D:
 	var g := Gradient.new()

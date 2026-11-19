@@ -18,13 +18,20 @@ const L = preload("res://scripts/Layers.gd")
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	collision_layer = L.PROP if low else L.WORLD
+	collision_layer = L.LOW_WALL if low else L.WORLD
 	collision_mask = 0
 	var cs := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
 	rect.size = size
 	cs.shape = rect
 	add_child(cs)
+	if not low:
+		var occ := LightOccluder2D.new()
+		var poly := OccluderPolygon2D.new()
+		var h := size * 0.5
+		poly.polygon = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+		occ.occluder = poly
+		add_child(occ)
 
 func _draw() -> void:
 	var r := Rect2(-size * 0.5, size)

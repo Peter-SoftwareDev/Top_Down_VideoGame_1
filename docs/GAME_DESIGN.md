@@ -225,7 +225,8 @@ Prioritize testing whether physics combat and the floor loop are fun.
 - **Viewpoint:** Top-down. "Ledges" are pits and chasms. Ladders are dropped.
 - **Weapon select:** the loadout is chosen on a select screen at the start and locked in for the run.
 - **Crouch:** crouching is slow, and hides you from guards behind low cover (crates, barricades). Standing, guards see over low cover. Tall walls always block sight.
-- **Gaoler charge rule:** it never charges across a pit or water at you. A pit *behind* you is fair game: sidestep and it overshoots.
+- **Light and shadow:** visibility depends on torchlight at the player's position, with walls casting shadows. Torches and braziers can be doused with a bolt or rock (a noise that draws a guard to relight it).
+- **Gaoler charge rule:** it never charges across a pit, water, a wall or a half wall at you. A pit *behind* you is fair game: sidestep and it overshoots.
 - **Loadouts:** Each loadout pairs one lethal weapon with one non-lethal physics tool:
   - **Crossbow + Shove:** lethal at range, physics push up close.
   - **Blade + Stun Rock:** lethal up close, physics hit at range (stun, knockback and noise).
@@ -287,7 +288,7 @@ The empire sealed the dead lands with a vast engine driven deep into the earth. 
 
 **Stealth depth**
 1. **Bodies get discovered.** A guard who finds a body raises the alarm or turns wary. *Bodies that fall into a pit or water are never found,* which gives the physics kills a stealth purpose.
-2. **Light and shadow.** Guards see less far into darkness. Torches can be knocked out with a rock (Blade) or a bolt (Crossbow), and crouching in shadow is safer still.
+2. **Light and shadow.** *(Built.)* Guards see less far into darkness. Torches can be knocked out with a rock (Blade) or a bolt (Crossbow), and crouching in shadow is safer still.
 3. **Footstep noise.** Walking makes a little noise, crouching none, dodging a lot. Rubble and puddles are louder.
 4. **Silent takedown.** Crouch up behind an unaware guard and take it down without a weapon. Slow (about a second), and it fails if anyone sees it.
 

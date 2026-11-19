@@ -77,7 +77,7 @@ func _choose_attack() -> bool:
 		_begin_windup(windup_time)
 		return true
 	if charge_cd <= 0.0 and dist >= CHARGE_MIN_RANGE and dist <= CHARGE_MAX_RANGE \
-			and _line_clear(target_point, L.WORLD) and not _hazard_between(target_point):
+			and not _lane_blocked(target_point):
 		charge_pending = true
 		_begin_windup(CHARGE_WINDUP)
 		return true
@@ -89,7 +89,7 @@ func _start_attack() -> void:
 		return
 	charge_pending = false
 	# The player may have moved during the wind-up. Never charge across a pit or water at them.
-	if _player_alive() and _hazard_between(player.global_position):
+	if _player_alive() and _lane_blocked(player.global_position):
 		Fx.popup(self, global_position + Vector2(0, -34), "...", Color(0.8, 0.8, 0.8))
 		_set_state(State.RECOVER)
 		return
@@ -102,14 +102,15 @@ func _start_attack() -> void:
 	Fx.shake(self, 3.0)
 	_set_state(State.CHARGE)
 
-## Is there a pit or pool on the way to `to_pos`? Checks the middle and both shoulders.
-## (A pit *beyond* the target doesn't count: that's the player's chance to make it overshoot.)
-func _hazard_between(to_pos: Vector2) -> bool:
+## Is anything in the way of a charge at `to_pos`: a wall, a half wall, a pit or water?
+## Checks the middle and both shoulders of the lane. Crates don't count: it bowls them over.
+## (Anything *beyond* the target doesn't count: that's the player's chance to make it overshoot.)
+func _lane_blocked(to_pos: Vector2) -> bool:
 	var space := get_world_2d().direct_space_state
 	var dir := (to_pos - global_position).normalized()
 	var side := dir.orthogonal() * (radius - 2.0)
 	for off in [Vector2.ZERO, side, -side]:
-		var q := PhysicsRayQueryParameters2D.create(global_position + off, to_pos + off, L.HAZARD_EDGE)
+		var q := PhysicsRayQueryParameters2D.create(global_position + off, to_pos + off, L.WORLD | L.LOW_WALL | L.HAZARD_EDGE)
 		if not space.intersect_ray(q).is_empty():
 			return true
 	return false
