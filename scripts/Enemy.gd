@@ -776,7 +776,7 @@ func _draw() -> void:
 		for i in cone_points.size() - 1:
 			draw_primitive(PackedVector2Array([Vector2.ZERO, cone_points[i], cone_points[i + 1]]), cols, PackedVector2Array())
 
-	if sprite != null:
+	if sprite != null and sprite.is_loaded():
 		# Contact shadow, and the "wary" ring on the floor around the feet.
 		draw_set_transform(Vector2(0, 2), 0.0, Vector2(1.0, 0.45))
 		draw_circle(Vector2.ZERO, radius + 1.0, Color(0, 0, 0, 0.35))

@@ -10,6 +10,7 @@ const Fx = preload("res://scripts/Fx.gd")
 const Bolt = preload("res://scripts/Bolt.gd")
 const Rock = preload("res://scripts/Rock.gd")
 const CharacterSprite = preload("res://scripts/CharacterSprite.gd")
+const Assets = preload("res://scripts/Assets.gd")
 
 ## Gear presets for testing (G cycles them). In the full game gear is found and earned.
 const GEAR_PRESETS := [
@@ -306,8 +307,9 @@ func _setup_step_sounds() -> void:
 		rnd.random_volume_offset_db = 2.0
 		for i in 8:
 			var path := "res://assets/audio/steps/%s_%d.wav" % [mat, i]
-			if ResourceLoader.exists(path):
-				rnd.add_stream(-1, load(path))
+			var snd := Assets.sound(path) if Assets.exists(path) else null
+			if snd != null:
+				rnd.add_stream(-1, snd)
 		if rnd.streams_count > 0:
 			_step_sounds[mat] = rnd
 
@@ -576,6 +578,10 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0, 2), 0.0, Vector2(1.0, 0.45))
 	draw_circle(Vector2.ZERO, RADIUS, Color(0, 0, 0, 0.35))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if sprite == null or not sprite.is_loaded():
+		# Art missing: fall back to the old gray-box body so you're never invisible.
+		draw_circle(Vector2.ZERO, RADIUS, Color(0.86, 0.8, 0.64) if not is_dead else Color(0.3, 0.28, 0.25))
+		draw_circle(aim * 5.0, 4.0, Color(0.3, 0.25, 0.2))
 	if is_dead:
 		return
 	if dodge_time > 0.0:

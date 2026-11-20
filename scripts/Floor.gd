@@ -18,6 +18,7 @@ extends Node2D
 @export_file("*.png") var materials_path: String = ""
 @export var material_cell: int = 16
 
+const Assets = preload("res://scripts/Assets.gd")
 const MATERIALS := ["stone", "straw", "iron", "brick", "water"]
 
 var _sprite: Sprite2D
@@ -26,20 +27,18 @@ var _materials: Image
 func _ready() -> void:
 	if not Engine.is_editor_hint():
 		add_to_group("floor")
-	if albedo_path != "" and ResourceLoader.exists(albedo_path):
+	var albedo: Texture2D = Assets.texture(albedo_path) if albedo_path != "" else null
+	if albedo != null:
 		var ct := CanvasTexture.new()
-		ct.diffuse_texture = load(albedo_path)
-		if normal_path != "" and ResourceLoader.exists(normal_path):
-			ct.normal_texture = load(normal_path)
+		ct.diffuse_texture = albedo
+		if normal_path != "":
+			ct.normal_texture = Assets.texture(normal_path)
 		_sprite = Sprite2D.new()
 		_sprite.texture = ct
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		add_child(_sprite)
-	if materials_path != "" and ResourceLoader.exists(materials_path):
-		var tex: Texture2D = load(materials_path)
-		_materials = tex.get_image()
-		if _materials.is_compressed():
-			_materials.decompress()
+	if materials_path != "":
+		_materials = Assets.image(materials_path)
 	queue_redraw()
 
 ## The floor material at a world position: "stone", "straw", "iron", "brick" or "water".

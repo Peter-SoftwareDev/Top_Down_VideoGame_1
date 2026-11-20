@@ -11,6 +11,7 @@ extends Node2D
 ## (down, up, right; left = right mirrored): idle(2), walk(4), crouch(2), act(1).
 
 const HUMAN_DIR := "res://assets/art/chars/human/"
+const Assets = preload("res://scripts/Assets.gd")
 const COLS := 4
 const ROWS := 12
 const DIRS := ["down", "up", "right"]
@@ -68,6 +69,7 @@ func rebuild() -> void:
 	if not _cache.has(key):
 		var img: Image = _load_image(sheet_path) if sheet_path != "" else _compose()
 		if img == null:
+			push_warning("Character art missing (%s): drawing simple shapes instead." % key)
 			return
 		if sheet_path == "":
 			pass   # Human sheets are outlined in _compose(); full sheets come outlined already.
@@ -79,20 +81,22 @@ func rebuild() -> void:
 	_apply_frame()
 
 func _load_image(path: String) -> Image:
-	if not ResourceLoader.exists(path):
+	if not Assets.exists(path):
 		return null
-	var tex: Texture2D = load(path)
-	var img := tex.get_image()
-	if img.is_compressed():
-		img.decompress()
-	img.convert(Image.FORMAT_RGBA8)
-	return img
+	return Assets.image(path)
+
+## False if the art couldn't be loaded; the character then falls back to simple shapes.
+func is_loaded() -> bool:
+	return _sprite != null and _sprite.texture != null
 
 func _compose() -> Image:
 	var fw := frame_size.x
 	var fh := frame_size.y
 	var out := Image.create(COLS * fw, ROWS * fh, false, Image.FORMAT_RGBA8)
-	var layers := {"body": _load_image(HUMAN_DIR + "body_%s.png" % body)}
+	var body_img := _load_image(HUMAN_DIR + "body_%s.png" % body)
+	if body_img == null:
+		return null
+	var layers := {"body": body_img}
 	for slot in gear:
 		layers[slot] = _load_image(HUMAN_DIR + "%s_%d.png" % [slot, gear[slot]])
 	for di in DIRS.size():
