@@ -37,6 +37,7 @@ crumbles = true
 position = Vector2(330, 700)
 script = ExtResource("4_hazard")
 size = Vector2(140, 140)
+style = 1
 
 [node name="CisternPool" type="Node2D" parent="Hazards"]
 position = Vector2(1100, 680)
@@ -48,12 +49,13 @@ size = Vector2(360, 240)
 position = Vector2(1820, 200)
 script = ExtResource("4_hazard")
 size = Vector2(520, 150)
+style = 1
 
 [node name="BridgePitSouth" type="Node2D" parent="Hazards"]
 position = Vector2(1820, 430)
 script = ExtResource("4_hazard")
 size = Vector2(520, 150)
-crumbles = true
+style = 1
 
 [node name="Channel" type="Node2D" parent="Hazards"]
 position = Vector2(700, 1200)

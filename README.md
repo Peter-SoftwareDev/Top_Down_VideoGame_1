@@ -27,14 +27,18 @@ A gray-box test area for physics combat, before building real floors, keys and p
 - **Scent-hounds (pair):** fast and fragile (1 health). Short sight, but they follow the trail you walked over the last ~9 seconds, and smell you through cover up close. Their bark carries further than a shout. They're light, so kicks and rocks send them twice as far. Shake them off by outpacing the trail, or distract them with a rock.
 - **Stealth bonus:** a lethal hit on an unaware guard kills it outright. Hits on stunned guards do double damage.
 - **Floors and footsteps:** the test room has baked floor art: imperial paving in the main hall, hewn rock on the Bridge with an **iron catwalk** between the pits, hewn cells with **straw** in the Dark Hall, and Cistern **brick** around the Channel. Walking makes noise depending on the floor: straw is silent, stone and brick are quiet (only very close guards hear), puddles splash, and iron is loud enough to draw guards from about 160px. Crouching is always silent. The HUD shows the floor under you and how loud it is.
-- **Characters and gear:** everyone is a pixel-art sprite with walk, idle, crouch and attack frames in four directions, lit by the torches. The player is built from gear layers (cloak, head, torso, hands, feet), so his look changes with what he wears. Guards use the same layers in Gaolwarden gear.
+- **Characters and gear:** everyone is a shaded pixel-art sprite with an 8-frame walk, 4-frame idle and crouch, and separate strike and kick motions in four directions, lit by the torches. The player is built from gear layers (cloak, head, torso, hands, feet), so his look changes with what he wears. Guards use the same layers in Gaolwarden gear.
 - **Footstep sounds:** each floor sounds different (stone tap, straw rustle, iron clank, puddle splash), with random variation. These are synthesized placeholders from `tools/audio/footsteps.py`; drop recorded WAVs with the same names into `assets/audio/steps/` to replace them.
 - **Gear that matters:** gear lies around the room (Scavenger pieces near the start, a Gaolwarden locker in the Dark Hall, relics at the far ends). Walk over a piece to wear it; what you had drops so you can swap back. **G** still cycles whole sets for quick testing.
   - **Armour** (helms, jerkins, mail, cuirass, greaves) gives grey armour points that absorb hits before health.
   - **Weight:** heavy pieces clank, and that noise is heard even on straw and a little even when crouching. Rag foot-wraps and cloaks muffle your steps. The broken shackles you start in rattle until you replace them.
   - **Disguise:** wearing the Gaolwarden helm and tabard makes unaware guards about 3× slower to notice you, but only at a distance, only while you walk openly (not crouching), not once they're wary, and never hounds, which go by smell.
 - **Bodies:** weapon kills leave a body; pit and water kills leave nothing. An unaware guard who spots a body (from much closer in darkness) walks over, shouts "BODY!" and brings every guard within earshot to search. Kick a body into a pit or water to hide it.
-- **Walls and pits:** walls are drawn as irregular masonry with a front face. Pits have broken, ragged edges, and their collision follows the drawn edge exactly.
+- **Walls and pits:** walls are drawn as irregular masonry with a front face. Pits come in two kinds:
+  - **Collapsed floor** (the chasm): an irregular, jagged hole with rubble and cracks. Its collision follows the drawn edge exactly, and a crumbling one bites a new lobe out of the floor.
+  - **Constructed shafts** (the oubliette, the pits the Bridge spans): straight edges, a dressed-stone kerb and a shaft wall dropping into darkness. They never crumble.
+  Set `style` on a hazard in the editor to choose.
+- **Water:** built basins with a stone kerb and an animated pixel-art water shader (`shaders/water.gdshader`): deeper water away from the edges, a drifting swell, caustics and glints.
 - **Feel:** a short hit stop on heavy hits, and slow motion on falls and drownings.
 
 ### Controls

@@ -406,7 +406,12 @@ func _update_sprite(delta: float) -> void:
 	if sprite == null:
 		return
 	var moving := velocity.length() > 20.0
-	sprite.animate(aim, moving, crouching, swing_time > 0.0, delta)
+	var action := ""
+	var phase := 0.0
+	if swing_time > 0.0:
+		action = "kick" if swing_kind == "shove" else "strike"
+		phase = 1.0 - swing_time / SWING_FX_TIME
+	sprite.animate(aim, moving, crouching, action, phase, delta)
 	var a := 1.0
 	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
 		a = 0.35
@@ -481,6 +486,7 @@ func _fire_bolt() -> void:
 		return
 	bolts -= 1
 	primary_cd = RELOAD_TIME
+	_swing("shoot")
 	var b := Bolt.new()
 	b.direction = aim
 	b.damage = BOLT_DAMAGE
@@ -523,6 +529,7 @@ func _rock_target() -> Vector2:
 
 func _throw_rock() -> void:
 	rocks -= 1
+	_swing("throw")
 	var r := Rock.new()
 	r.setup(global_position + aim * (RADIUS + 4.0), _rock_target())
 	get_parent().add_child(r)
@@ -595,7 +602,7 @@ func _draw_overlay() -> void:
 	var o := overlay
 	var hand := Vector2(0, -9)   # Weapons are held at chest height.
 	var alpha := 1.0
-	if swing_time > 0.0:
+	if swing_time > 0.0 and (swing_kind == "shove" or swing_kind == "slash"):
 		var k := swing_time / SWING_FX_TIME
 		var is_shove := swing_kind == "shove"
 		var reach := SHOVE_RANGE if is_shove else SLASH_RANGE

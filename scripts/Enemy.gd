@@ -193,8 +193,16 @@ func _make_sprite() -> Node2D:
 func _update_sprite(delta: float) -> void:
 	if sprite == null:
 		return
-	var acting := state == State.WINDUP or state == State.LUNGE or state == State.CHARGE
-	sprite.animate(facing, velocity.length() > 10.0, state == State.STUNNED, acting, delta)
+	var action := ""
+	var phase := 0.0
+	match state:
+		State.WINDUP:
+			action = "strike"; phase = 0.0                          # hold the wind-up pose
+		State.LUNGE:
+			action = "strike"; phase = 0.4 + 0.6 * clampf(state_time / lunge_time, 0.0, 1.0)
+		State.RECOVER:
+			action = "strike"; phase = 1.0
+	sprite.animate(facing, velocity.length() > 10.0, state == State.STUNNED, action, phase, delta)
 	var tint := Color.WHITE
 	if state == State.WINDUP:
 		tint = Color.WHITE.lerp(Color(1.0, 0.55, 0.25), clampf(state_time / windup_duration, 0.0, 1.0))

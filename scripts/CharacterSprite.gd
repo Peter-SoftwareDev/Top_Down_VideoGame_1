@@ -7,17 +7,17 @@ extends Node2D
 ## shades them. Change gear with set_gear() and the look updates immediately.
 ## Non-human characters use one ready-made sheet (sheet_path) instead.
 ##
-## Sheet layout (from tools/pixelart/characters.py): 4 columns x 12 rows. For each direction
-## (down, up, right; left = right mirrored): idle(2), walk(4), crouch(2), act(1).
+## Sheet layout (from tools/pixelart/characters.py): 8 columns x 15 rows. For each direction
+## (down, up, right; left = right mirrored): idle(4), walk(8), crouch(4), strike(3), kick(3).
 
 const HUMAN_DIR := "res://assets/art/chars/human/"
 const Assets = preload("res://scripts/Assets.gd")
-const COLS := 4
-const ROWS := 12
+const COLS := 8
+const ROWS := 15
 const DIRS := ["down", "up", "right"]
-const ANIMS := ["idle", "walk", "crouch", "act"]
-const NFRAMES := {"idle": 2, "walk": 4, "crouch": 2, "act": 1}
-const FPS := {"idle": 2.0, "walk": 9.0, "crouch": 6.0, "act": 1.0}
+const ANIMS := ["idle", "walk", "crouch", "strike", "kick"]
+const NFRAMES := {"idle": 4, "walk": 8, "crouch": 4, "strike": 3, "kick": 3}
+const FPS := {"idle": 3.0, "walk": 13.0, "crouch": 7.0}
 const ORDER := {
 	"down": ["back", "body", "feet", "torso", "hands", "head"],
 	"right": ["back", "body", "feet", "torso", "hands", "head"],
@@ -38,6 +38,7 @@ var gear := {}
 static var _cache := {}
 var dir := "down"
 var anim := "idle"
+var _phase := 0.0
 var _t := 0.0
 var _sprite: Sprite2D
 
@@ -101,7 +102,7 @@ func _compose() -> Image:
 		layers[slot] = _load_image(HUMAN_DIR + "%s_%d.png" % [slot, gear[slot]])
 	for di in DIRS.size():
 		var d: String = DIRS[di]
-		var band := Rect2i(0, di * 4 * fh, COLS * fw, 4 * fh)
+		var band := Rect2i(0, di * ANIMS.size() * fh, COLS * fw, ANIMS.size() * fh)
 		for slot in ORDER[d]:
 			var layer: Image = layers.get(slot)
 			if layer != null:
@@ -155,7 +156,9 @@ func _normal_map(img: Image) -> Image:
 	return n
 
 ## Call every frame: picks direction and animation, and advances the frame.
-func animate(facing: Vector2, moving: bool, crouching: bool, acting: bool, delta: float) -> void:
+## `action` is "" or "strike" / "kick"; `phase` (0..1) is how far through the action we are,
+## so attacks play in step with the game rather than on a timer.
+func animate(facing: Vector2, moving: bool, crouching: bool, action: String, phase: float, delta: float) -> void:
 	var new_dir := dir
 	if facing.length() > 0.01:
 		if absf(facing.x) > absf(facing.y) * 1.1:
@@ -164,7 +167,8 @@ func animate(facing: Vector2, moving: bool, crouching: bool, acting: bool, delta
 		else:
 			new_dir = "down" if facing.y > 0.0 else "up"
 			_sprite.flip_h = false
-	var new_anim := "act" if acting else ("crouch" if crouching else ("walk" if moving else "idle"))
+	var new_anim := action if action != "" else ("crouch" if crouching else ("walk" if moving else "idle"))
+	_phase = clampf(phase, 0.0, 1.0)
 	if new_anim != anim or new_dir != dir:
 		_t = 0.0
 	dir = new_dir
@@ -176,8 +180,13 @@ func animate(facing: Vector2, moving: bool, crouching: bool, acting: bool, delta
 func _apply_frame() -> void:
 	if _sprite == null or _sprite.texture == null:
 		return
-	var row := DIRS.find(dir) * 4 + ANIMS.find(anim)
-	var col: int = int(_t * float(FPS[anim])) % int(NFRAMES[anim])
+	var row := DIRS.find(dir) * ANIMS.size() + ANIMS.find(anim)
+	var n: int = NFRAMES[anim]
+	var col: int
+	if FPS.has(anim):
+		col = int(_t * float(FPS[anim])) % n
+	else:
+		col = clampi(int(_phase * n), 0, n - 1)
 	_sprite.frame = row * COLS + col
 
 func set_tint(c: Color) -> void:

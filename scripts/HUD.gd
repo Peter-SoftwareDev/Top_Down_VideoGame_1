@@ -43,6 +43,8 @@ func _draw_offscreen_pickups(vp: Vector2) -> void:
 	var inner := Rect2(Vector2(margin, margin), vp - Vector2(margin, margin) * 2.0)
 	var centre := vp * 0.5
 	for p in get_tree().get_nodes_in_group("pickup"):
+		if p.kind == "gear":
+			continue   # Gear stays where it was placed; arrows are for ammo you dropped.
 		if player.global_position.distance_to(p.global_position) > 1400.0:
 			continue
 		var sp: Vector2 = xf * p.global_position
